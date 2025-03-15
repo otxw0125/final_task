@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const session = require('express-session');
 const { MongoClient } = require('mongodb');
-// 추가된 부분 (시리얼 통신)
+// 시리얼 통신
 const { SerialPort }= require('serialport');
 const { ReadlineParser }= require('@serialport/parser-readline');
 
@@ -44,7 +44,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // POST 요청의 폼 데이터 파싱
 app.use(express.urlencoded({ extended: true }));
 
-// 추가된 부분(시리얼 포트 설정)
+// 시리얼 포트 설정
 const portSerial = new SerialPort({
   
   path: 'COM4',
