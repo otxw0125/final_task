@@ -1,0 +1,16 @@
+<!-- views/dashboard.ejs -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>대시보드</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>환영합니다! <%= user.username %>님!</h1>
+    <!-- 로그인 버튼은 보이지 않고, 분석 결과 조회 버튼 제공 -->
+    <button onclick="window.location.href='/analyze'">분석 결과 조회</button>
+  </div>
+</body>
+</html>

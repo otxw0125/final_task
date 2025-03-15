@@ -1,0 +1,25 @@
+<!-- views/login.ejs -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>로그인</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="login-box">
+    <form action="/login" method="POST">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" placeholder="Enter username" required>
+      
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" placeholder="Enter password" required>
+      
+      <button type="submit">로그인</button>
+    </form>
+    <p>
+      아직 회원이 아니신가요? <a href="/signup">sign up</a>
+    </p>
+  </div>
+</body>
+</html>
