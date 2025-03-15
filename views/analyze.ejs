@@ -1,14 +1,46 @@
-<!-- views/index.ejs -->
+<!-- views/analyze.ejs -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>착석 자세 분석 결과</title>
+  <title>분석 결과</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h1>착석 자세 분석 결과</h1>
-  <p>자세: <%= analysis.posture %></p>
-  <p>점수: <%= analysis.score %></p>
+  <div class="container">
+    <h1>분석 결과</h1>
+    <canvas id="tiltChart" width="400" height="200"></canvas>
+  </div>
+  <script>
+    // 서버에서 전달한 sensorData를 JavaScript 변수로 변환
+    const sensorData = <%= JSON.stringify(sensorData) %>;
+
+    // 타임스탬프와 기울기 값을 각각의 배열로 생성
+    const labels = sensorData.map(data => new Date(data.timestamp).toLocaleTimeString());
+    const tiltValues = sensorData.map(data => data.tilt);
+
+    const ctx = document.getElementById('tiltChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '기울기 값',
+          data: tiltValues,
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1,
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
 </body>
 </html>

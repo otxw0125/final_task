@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const session = require('express-session');
 const { MongoClient } = require('mongodb');
+const { getSensorDataByUser } = require('./models/sensorDataModel');
 // 시리얼 통신
 const { SerialPort }= require('serialport');
 const { ReadlineParser }= require('@serialport/parser-readline');
@@ -141,12 +142,18 @@ app.post('/signup', async (req, res) => {
   
 
 // 기본 라우트 - 착석 자세 분석 결과 표시
+// analyze 페이지: 로그인한 사용자의 센서 데이터 조회 후 전달
 app.get('/analyze', async (req, res) => {
-  // 예시: MongoDB에서 분석 결과를 가져오는 코드 (주석 처리)
-  // const analysis = await db.collection('analysis').findOne({});
-  
-  // 임시 데이터 (추후 MongoDB 데이터로 대체)
-  const analysis = { posture: '좋음', score: 90 };
-  res.render('analyze', { analysis });
-});
-
+    if (!req.session || !req.session.user) {
+      return res.redirect('/login');
+    }
+    
+    try {
+      // 센서 데이터 모델에서 사용자별 센서 데이터를 조회합니다.
+      const sensorData = await getSensorDataByUser(db, req.session.user._id);
+      res.render('analyze', { sensorData });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('센서 데이터 조회 중 오류 발생');
+    }
+  });
