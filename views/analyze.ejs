@@ -10,6 +10,11 @@
 <body>
   <div class="container">
     <h1>분석 결과</h1>
+    <!-- 평균 값과 분석 메시지 표시 -->
+    <p>평균 센서 데이터: <strong><%= average %></strong></p>
+    <p>분석 결과: <strong><%= message %></strong></p>
+    
+    <!-- 차트 캔버스 -->
     <canvas id="tiltChart" width="400" height="200"></canvas>
   </div>
   <script>

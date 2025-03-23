@@ -21,11 +21,35 @@ const uri = 'mongodb+srv://admin:dlghwns8391@sleepy.1jou6.mongodb.net/?retryWrit
 const dbName = 'ProjectDB';
 let db;
 
+const testUserId = "test";
+
+function generateRandomSensorData() {
+  const sensorData = [];
+  for (let i = 0; i < 10; i++) {
+    // -10.0 ~ 10.0 사이의 난수 (소수점 둘째자리까지)
+    const tilt = parseFloat((Math.random() * 20 - 10).toFixed(2));
+    sensorData.push({
+      userId: testUserId,
+      tilt: tilt,
+      timestamp: new Date()
+    });
+  }
+  return sensorData;
+}
 // MongoDB 연결
 MongoClient.connect(uri)
   .then(client => {
     console.log('MongoDB에 연결되었습니다.');
     db = client.db(dbName);
+
+     // 서버 시작 전에 테스트 센서 데이터 10개 삽입
+     const data = generateRandomSensorData();
+     db.collection('sensorData').insertMany(data)
+       .then(result => {
+         console.log(`Test sensor data inserted: ${result.insertedCount}개`);
+       })
+       .catch(error => console.error('Test data 삽입 중 오류:', error));
+ 
     // 서버 실행
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
@@ -143,17 +167,28 @@ app.post('/signup', async (req, res) => {
 
 // 기본 라우트 - 착석 자세 분석 결과 표시
 // analyze 페이지: 로그인한 사용자의 센서 데이터 조회 후 전달
+// /analyze 페이지: test 계정의 센서 데이터를 조회하여 평균 및 기울기 메시지 표시
 app.get('/analyze', async (req, res) => {
-    if (!req.session || !req.session.user) {
-      return res.redirect('/login');
+  try {
+    // test 계정에 해당하는 센서 데이터를 모두 조회
+    const sensorData = await db.collection('sensorData').find({ userId: testUserId }).toArray();
+    if (sensorData.length === 0) {
+      return res.send("센서 데이터가 없습니다.");
     }
-    
-    try {
-      // 센서 데이터 모델에서 사용자별 센서 데이터를 조회합니다.
-      const sensorData = await getSensorDataByUser(db, req.session.user._id);
-      res.render('analyze', { sensorData });
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('센서 데이터 조회 중 오류 발생');
+    // 평균 계산
+    const sum = sensorData.reduce((acc, curr) => acc + curr.tilt, 0);
+    const avg = sum / sensorData.length;
+    let message;
+    if (avg > 0) {
+      message = "우측으로 기울어졌습니다.";
+    } else if (avg < 0) {
+      message = "좌측으로 기울어졌습니다.";
+    } else {
+      message = "수평입니다.";
     }
-  });
+    res.render('analyze', { average: avg.toFixed(2), message: message, sensorData: sensorData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('센서 데이터 조회 중 오류 발생');
+  }
+});
