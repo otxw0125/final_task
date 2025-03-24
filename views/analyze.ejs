@@ -3,45 +3,56 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>분석 결과</title>
+  <title>MTH</title>
   <link rel="stylesheet" href="/style.css">
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>분석 결과</h1>
-    <!-- 평균 값과 분석 메시지 표시 -->
+    <h1>앉은 자세 기울기 분석 결과</h1>
     <p>평균 센서 데이터: <strong><%= average %></strong></p>
-    <p>분석 결과: <strong><%= message %></strong></p>
-    
-    <!-- 차트 캔버스 -->
-    <canvas id="tiltChart" width="400" height="200"></canvas>
+    <h2>평균 기울기 분포</h2>
+    <canvas id="histogramChart" width="600" height="400"></canvas>
   </div>
   <script>
-    // 서버에서 전달한 sensorData를 JavaScript 변수로 변환
-    const sensorData = <%= JSON.stringify(sensorData) %>;
-
-    // 타임스탬프와 기울기 값을 각각의 배열로 생성
-    const labels = sensorData.map(data => new Date(data.timestamp).toLocaleTimeString());
-    const tiltValues = sensorData.map(data => data.tilt);
-
-    const ctx = document.getElementById('tiltChart').getContext('2d');
+    // 서버에서 전달한 bins 배열을 가져옴 (bins 배열은 각 bin의 개수를 나타냄)
+    const bins = <%= JSON.stringify(bins) %>;
+    
+    // x축 라벨은 -10부터 10까지 문자열 배열로 생성
+    const labels = [];
+    for (let i = -10; i <= 10; i++) {
+      labels.push(i.toString());
+    }
+    
+    // Chart.js를 사용하여 바 차트(히스토그램) 생성
+    const ctx = document.getElementById('histogramChart').getContext('2d');
     new Chart(ctx, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: labels,
         datasets: [{
-          label: '기울기 값',
-          data: tiltValues,
+          label: '센서 데이터 개수',
+          data: bins,
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
           borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1,
-          fill: false
+          borderWidth: 1
         }]
       },
       options: {
         scales: {
           y: {
-            beginAtZero: true
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: '개수'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: '기울기 값'
+            }
           }
         }
       }

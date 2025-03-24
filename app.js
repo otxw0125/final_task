@@ -23,19 +23,6 @@ let db;
 
 const testUserId = "test";
 
-function generateRandomSensorData() {
-  const sensorData = [];
-  for (let i = 0; i < 10; i++) {
-    // -10.0 ~ 10.0 사이의 난수 (소수점 둘째자리까지)
-    const tilt = parseFloat((Math.random() * 20 - 10).toFixed(2));
-    sensorData.push({
-      userId: testUserId,
-      tilt: tilt,
-      timestamp: new Date()
-    });
-  }
-  return sensorData;
-}
 // MongoDB 연결
 MongoClient.connect(uri)
   .then(client => {
@@ -58,6 +45,33 @@ app.listen(port, () => {
 
   })
   .catch(error => console.error('MongoDB 연결 오류:', error));
+// 예시: sensorData를 DB에 삽입하는 함수 (콜백 방식)
+// 난수 센서 데이터를 생성하는 함수
+function generateRandomSensorData() {
+  const sensorData = [];
+  for (let i = 0; i < 10; i++) {
+    // -10.0 ~ 10.0 사이의 난수 (소수점 둘째 자리까지)
+    const tilt = parseFloat((Math.random() * 20 - 10).toFixed(2));
+    sensorData.push({
+      user_Id: testUserId, // testUserId가 정의되어 있어야 합니다.
+      tilt: tilt,
+      timestamp: new Date()
+    });
+  }
+  return sensorData;
+}
+// 테스트 센서 데이터를 DB에 삽입하는 함수 (콜백 방식)
+function insertTestSensorData(callback) {
+  const sensorData = generateRandomSensorData();
+  db.collection('sensorData').insertMany(sensorData, (err, result) => {
+    if (err) {
+      console.error("데이터 삽입 중 오류:", err);
+      return callback(err, null);
+    }
+    console.log(`${result.insertedCount}개의 문서가 삽입되었습니다.`);
+    callback(null, result);
+  });
+}
 
 // EJS 뷰 엔진 설정
 app.set('view engine', 'ejs');
@@ -78,34 +92,42 @@ const portSerial = new SerialPort({
 
 // 데이터 파서 설정
 const parser = portSerial.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-
 // 포트 열기
-portSerial.on('open', () => {
-  console.log('시리얼 포트가 열렸습니다.');
-});
+if (portSerial) {
+  portSerial.on('open', () => {
+    console.log('시리얼 포트가 열렸습니다.');
+  });
 
-// 데이터 수신 처리
-parser.on('data', (data) => {
-  console.log(`수신된 데이터: ${data}`);
-});
+  // 에러 처리
+  portSerial.on('error', (err) => {
+    console.error(`포트 오류: ${err.message}`);
+  });
+}
 
-// 에러 처리
-portSerial.on('error', (err) => {
-  console.error(`포트 오류: ${err.message}`);
-});
+// 데이터 수신 처리 (parser가 있다면)
+if (typeof parser !== 'undefined') {
+  parser.on('data', (data) => {
+    console.log(`수신된 데이터: ${data}`);
+  });
+}
 
 // 서버 종료 시 시리얼 포트 닫기
 process.on('SIGINT', () => {
   console.log('서버 종료 중...');
-  portSerial.close((err) => {
-    if (err) {
-      return console.error('포트 닫기 오류:', err.message);
-    }
-    console.log('시리얼 포트가 닫혔습니다.');
-    process.exit(0); // 프로세스 종료
-  });
+  if (portSerial && portSerial.isOpen) {
+    portSerial.close((err) => {
+      if (err) {
+        console.error('포트 닫기 오류:', err.message);
+      } else {
+        console.log('시리얼 포트가 닫혔습니다.');
+      }
+      process.exit(0); // 프로세스 종료
+    });
+  } else {
+    console.log('시리얼 포트가 열려있지 않습니다. 서버를 종료합니다.');
+    process.exit(0);
+  }
 });
-
 // 기본 홈페이지: 로그인 상태에 따라 서로 다른 페이지 렌더링
 app.get('/', (req, res) => {
     if (req.session && req.session.user) {
@@ -176,19 +198,29 @@ app.get('/analyze', async (req, res) => {
       return res.send("센서 데이터가 없습니다.");
     }
     // 평균 계산
-    const sum = sensorData.reduce((acc, curr) => acc + curr.tilt, 0);
-    const avg = sum / sensorData.length;
-    let message;
-    if (avg > 0) {
-      message = "우측으로 기울어졌습니다.";
-    } else if (avg < 0) {
-      message = "좌측으로 기울어졌습니다.";
-    } else {
-      message = "수평입니다.";
-    }
-    res.render('analyze', { average: avg.toFixed(2), message: message, sensorData: sensorData });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('센서 데이터 조회 중 오류 발생');
-  }
-});
+        // 평균 센서 데이터 계산
+        const sum = sensorData.reduce((acc, curr) => acc + curr.tilt, 0);
+        const avg = sum / sensorData.length;
+        
+        // 히스토그램을 위한 bins 생성 (-10 ~ 10, 1 단위 → 21개의 bin)
+        const bins = Array(21).fill(0);
+        sensorData.forEach(data => {
+          let tilt = data.tilt;
+          // -10과 10의 범위를 벗어나면 클램핑
+          if (tilt < -10) tilt = -10;
+          if (tilt > 10) tilt = 10;
+          // tilt + 10는 0 ~ 20 범위를 만들며, Math.floor로 bin 인덱스를 결정
+          const binIndex = Math.floor(tilt + 10);
+          bins[binIndex]++;
+        });
+        
+        res.render('analyze', { 
+          average: avg.toFixed(2),  // 평균값 (소수점 둘째 자리)
+          bins: bins, 
+          sensorData: sensorData 
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send('센서 데이터 조회 중 오류 발생');
+      }
+    });
