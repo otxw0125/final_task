@@ -7,8 +7,14 @@ const { getSensorDataByUser } = require('./models/sensorDataModel');
 // 시리얼 통신
 const { SerialPort }= require('serialport');
 const { ReadlineParser }= require('@serialport/parser-readline');
+const socketIo = require('socket.io');
+const http = require('http');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+
 
 app.use(session({
     secret: 'yourSecretKey',  // 보안을 위해 실제 서비스에서는 더 복잡한 값 사용
@@ -46,33 +52,47 @@ app.listen(port, () => {
   })
   .catch(error => console.error('MongoDB 연결 오류:', error));
 // 예시: sensorData를 DB에 삽입하는 함수 (콜백 방식)
-// 난수 센서 데이터를 생성하는 함수
-function generateRandomSensorData() {
-  const sensorData = [];
-  for (let i = 0; i < 10; i++) {
-    // -10.0 ~ 10.0 사이의 난수 (소수점 둘째 자리까지)
-    const tilt = parseFloat((Math.random() * 20 - 10).toFixed(2));
-    sensorData.push({
-      user_Id: testUserId, // testUserId가 정의되어 있어야 합니다.
-      tilt: tilt,
-      timestamp: new Date()
-    });
-  }
-  return sensorData;
-}
-// 테스트 센서 데이터를 DB에 삽입하는 함수 (콜백 방식)
-function insertTestSensorData(callback) {
+function insertTestSensorData() {
   const sensorData = generateRandomSensorData();
   db.collection('sensorData').insertMany(sensorData, (err, result) => {
     if (err) {
       console.error("데이터 삽입 중 오류:", err);
-      return callback(err, null);
+      return;
     }
-    console.log(`${result.insertedCount}개의 문서가 삽입되었습니다.`);
-    callback(null, result);
+    console.log(`Test sensor data inserted: ${result.insertedCount}개`);
+    // 새로운 데이터가 삽입되면 클라이언트로 전송
+    io.emit('newData', sensorData);
   });
 }
+    // 예시: 주기적으로 테스트 데이터 삽입 (10초마다)
+    setInterval(() => {
+      const sensorData = generateRandomSensorData();
+      db.collection('sensorData').insertMany(sensorData)
+        .then(result => {
+          console.log(`Test sensor data inserted: ${result.insertedCount}개`);
+          // 모든 연결된 클라이언트에게 newData 이벤트 전송
+          io.emit('newData', sensorData);
+        })
+        .catch(err => console.error('데이터 삽입 오류:', err));
+    }, 10000);;
 
+// 난수 센서 데이터를 생성하는 함수
+function generateRandomSensorData() {
+  const data = [];
+  for (let i = 0; i < 10; i++) {
+    const tilt = parseFloat((Math.random() * 20 - 10).toFixed(2));
+    data.push({
+      userId: 'test',
+      tilt,
+      timestamp: new Date()
+    });
+  }
+  return data;
+}
+// 클라이언트 연결 시 이벤트 처리
+io.on('connection', (socket) => {
+  console.log('클라이언트가 연결되었습니다.');
+});
 // EJS 뷰 엔진 설정
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
