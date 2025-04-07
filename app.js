@@ -45,7 +45,7 @@ MongoClient.connect(uri)
  
     // 서버 실행
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
 });
 
