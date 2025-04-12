@@ -108,20 +108,20 @@ app.get('/monitoring', (req, res) => {
 
 // 센서 데이터 수신용 POST 라우트
 app.post('/api/sensorData', async (req, res) => {
-  const { random_value } = req.body; // 아두이노에서 보낸 데이터
-  latestRandomValues.push(random_value); // 최신 난수 값을 배열에 추가
-  
+  const { adjusted_angle } = req.body; // 아두이노에서 보낸 데이터 (adjusted_angle로 변경)
+  latestRandomValues.push(adjusted_angle); // 최신 각도 값을 배열에 추가 (변수명 변경)
+
   // 배열의 길이를 10으로 제한 (10개 초과 시 가장 오래된 값 삭제)
   if (latestRandomValues.length > 10) {
-      latestRandomValues.shift(); // 가장 오래된 값 삭제
+    latestRandomValues.shift(); // 가장 오래된 값 삭제
   }
 
   try {
-      console.log('받은 난수 값:', random_value); // 콘솔에 난수 값 출력
-      res.status(200).send('데이터가 성공적으로 저장되었습니다.');
+    console.log('받은 각도 값:', adjusted_angle); // 콘솔에 각도 값 출력 (변수명 변경)
+    res.status(200).send('데이터가 성공적으로 저장되었습니다.');
   } catch (error) {
-      console.error(error);
-      res.status(500).send('데이터 저장 중 오류 발생');
+    console.error(error);
+    res.status(500).send('데이터 저장 중 오류 발생');
   }
 });
 
@@ -130,7 +130,7 @@ app.get('/api/latestSensorData', (req, res) => {
   if (latestRandomValues.length > 0) {
       res.json({ random_values: latestRandomValues }); // JSON 형식으로 응답
   } else {
-      res.status(404).send('난수 값이 없습니다.');
+      res.status(404).send('각도 값이 없습니다.');
   }
 });
 // 기본 라우트 - 착석 자세 분석 결과 표시
