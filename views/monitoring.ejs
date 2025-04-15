@@ -18,17 +18,45 @@
       margin-bottom: 5px;
     }
   </style>
+  <!-- Socket.IO 클라이언트 라이브러리 로드 -->
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
   <h1>최신 각도 값 모니터링</h1>
-  <ul>
-    <% if (latestRandomValues && latestRandomValues.length > 0) { %>
-      <% latestRandomValues.forEach(function(value, index) { %>
+  <ul id="angleList">
+    <% if (latestAngleValues && latestAngleValues.length > 0) { %>
+      <% latestAngleValues.forEach(function(value, index) { %>
         <li><%= index + 1 %>. <%= value %></li>
       <% }); %>
     <% } else { %>
       <li>데이터가 없습니다.</li>
     <% } %>
   </ul>
+  
+  <script>
+    // Socket.IO 클라이언트와 연결
+    var socket = io();
+
+    // 서버로부터 newData 이벤트가 발생하면 해당 데이터를 목록에 추가
+    socket.on('newData', function(data) {
+      // data는 { userId, tilt, timestamp } 형식으로 전달됩니다.
+      var angleList = document.getElementById('angleList');
+
+      // 만약 "데이터가 없습니다." 항목이 있다면 제거
+      if(angleList.firstElementChild && angleList.firstElementChild.textContent.trim() === "데이터가 없습니다.") {
+        angleList.innerHTML = "";
+      }
+
+      // 새로 들어온 데이터를 목록에 추가 (최신 데이터는 리스트 맨 아래에 추가)
+      var li = document.createElement('li');
+      li.textContent = angleList.children.length + 1 + ". " + data.tilt;
+      angleList.appendChild(li);
+
+      // 최신 값이 10개를 초과하면 오래된 항목 제거 (최대 10개 유지)
+      while(angleList.children.length > 10) {
+        angleList.removeChild(angleList.firstElementChild);
+      }
+    });
+  </script>
 </body>
 </html>
