@@ -14,3 +14,6 @@ path: 'COM4', baudRate: 9600 // 아두이노와 동일한 보드레이트 설정
 // 에러 처리 portSerial.on('error', (err) => { console.error(포트 오류: ${err.message}); });
 
 // 서버 종료 시 시리얼 포트 닫기 process.on('SIGINT', () => { console.log('서버 종료 중...'); portSerial.close((err) => { if (err) { return console.error('포트 닫기 오류:', err.message); } console.log('시리얼 포트가 닫혔습니다.'); process.exit(0); // 프로세스 종료 }); });
+
+지금 analyze 페이지 열면 실시간으로 데이터 변경되는거 확인 가능함.
+그래서 나 이제 뭐함?
