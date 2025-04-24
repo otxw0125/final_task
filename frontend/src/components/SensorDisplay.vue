@@ -1,69 +1,152 @@
 <template>
   <div>
-    <h2>실시간 센서 데이터</h2>
+    <h2>센서 데이터 분포 (각도별 개수)</h2>
+    <!-- 차트를 감싸는 div -->
+    <div class="chart-container">
+      <!-- Line 대신 Bar 컴포넌트 사용 -->
+      <Bar v-if="chartData.labels.length > 0" :data="chartData" :options="chartOptions" />
+      <p v-else>데이터 로딩 중 또는 표시할 데이터가 없습니다...</p>
+    </div>
+
+    <hr style="margin: 20px 0;">
+
+    <h2>최신 데이터 값</h2>
     <p v-if="latestRecord">
       사용자: {{ latestRecord.userId }} <br>
-      값 (X): {{ latestRecord.tilt?.x }} <br>
+      값 (X): {{ latestRecord.tilt?.x?.toFixed(2) }} <br>
       시간: {{ new Date(latestRecord.timestamp).toLocaleString() }}
     </p>
     <p v-else>데이터 수신 대기 중...</p>
-
-    <h3>최근 100개 데이터</h3>
-    <ul>
-      <li v-for="record in recentData" :key="record._id">
-        {{ new Date(record.timestamp).toLocaleTimeString() }}: {{ record.tilt?.x }} (User: {{ record.userId }})
-      </li>
-    </ul>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import { io } from 'socket.io-client'; // socket.io 클라이언트 import
+import { io } from 'socket.io-client';
+// *** 1. Bar 컴포넌트 임포트 ***
+import { Bar } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  // *** 1. LineElement 대신 BarElement 임포트 ***
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 
-const recentData = ref([]);
+// *** 1. Chart.js 구성 요소 등록 (BarElement 추가) ***
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement, // BarElement 등록
+  Title,
+  Tooltip,
+  Legend
+);
+
+const allSensorData = ref([]);
 const latestRecord = ref(null);
 let socket = null;
+// 데이터 포인트 수는 이제 전체 데이터를 사용하거나 다른 기준으로 정할 수 있습니다.
+// const MAX_DATA_POINTS = 1000; // 예시: 최근 1000개 데이터 사용
 
-// 백엔드 API 주소 (개발 시 Vite 프록시 설정 필요, 아래 설명 참조)
-const API_BASE_URL = '/api'; // 또는 http://localhost:3000/api (백엔드 서버 주소)
+const API_BASE_URL = '/api';
 
-// 최근 데이터 불러오기 함수
+// 초기 데이터 로드 함수 (필요시 limit 조정)
 const fetchRecentData = async () => {
   try {
-    // Express 백엔드의 /api/sensor-data 엔드포인트 호출
-    const response = await axios.get(`${API_BASE_URL}/sensor-data`);
-    recentData.value = response.data;
+    // 초기 로드 시 가져올 데이터 개수 (예: 최근 200개)
+    const response = await axios.get(`${API_BASE_URL}/sensor-data?limit=200`);
+    // 여기서는 시간순 정렬이 필수는 아님
+    allSensorData.value = response.data;
     if (response.data.length > 0) {
-      latestRecord.value = response.data[0]; // 가장 최신 데이터를 초기값으로 설정
+      // 최신 데이터는 여전히 필요할 수 있음 (시간 역순으로 첫번째)
+      latestRecord.value = response.data[0];
     }
   } catch (error) {
     console.error('센서 데이터 로딩 실패:', error);
   }
 };
 
-onMounted(() => {
-  // 컴포넌트 마운트 시 초기 데이터 로드
-  fetchRecentData();
+// *** 2. chartData 계산 로직 변경 ***
+const chartData = computed(() => {
+  const angleCounts = {}; // { 각도: 개수 } 형태의 객체
 
-  // Socket.IO 연결 설정 (백엔드 서버 주소로 연결)
-  // 개발 시에는 Vite 프록시를 통하거나 백엔드 주소를 직접 명시
-  socket = io(); // 현재 도메인으로 연결 시도 (Vite 프록시 사용 시)
-  // 또는 socket = io('http://localhost:3000'); // 백엔드 주소 명시
-
-  // 'newData' 이벤트 수신 리스너
-  socket.on('newData', (newRecord) => {
-    console.log('새 데이터 수신 (Socket.IO):', newRecord);
-    latestRecord.value = newRecord;
-    // 최근 데이터 목록 앞쪽에 새 데이터 추가 (옵션)
-    recentData.value.unshift(newRecord);
-    if (recentData.value.length > 100) {
-      recentData.value.pop(); // 100개 초과 시 가장 오래된 데이터 제거
+  // allSensorData 순회하며 각도별 개수 집계 (정수로 반올림)
+  allSensorData.value.forEach(record => {
+    if (record.tilt && typeof record.tilt.x === 'number') {
+      const roundedAngle = Math.round(record.tilt.x); // 각도를 정수로 반올림
+      angleCounts[roundedAngle] = (angleCounts[roundedAngle] || 0) + 1;
     }
   });
 
-  // 연결 확인 (디버깅용)
+  // 집계된 데이터를 각도 순으로 정렬
+  const sortedAngles = Object.keys(angleCounts).map(Number).sort((a, b) => a - b);
+
+  return {
+    labels: sortedAngles.map(String), // X축 레이블 (각도 값, 문자열로 변환)
+    datasets: [
+      {
+        label: 'Frequency', // 데이터셋 레이블
+        backgroundColor: '#36A2EB', // 막대 색상
+        borderColor: '#36A2EB', // 막대 테두리 색상
+        data: sortedAngles.map(angle => angleCounts[angle]), // Y축 데이터 (개수)
+      }
+    ]
+  };
+});
+
+// *** 3. chartOptions 수정 ***
+const chartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: { // Y축 설정 (개수)
+      beginAtZero: true, // 0부터 시작
+      title: {
+        display: true,
+        text: 'Count' // Y축 제목
+      }
+    },
+    x: { // X축 설정 (각도)
+      title: {
+        display: true,
+        text: 'Angle (°)' // X축 제목
+      }
+      // 카테고리 스케일이 기본값이므로 type 지정 불필요
+    }
+  },
+  plugins: {
+    legend: {
+      display: true // 범례 표시 (Frequency)
+    },
+    tooltip: {
+      enabled: true // 툴팁 표시
+    }
+  }
+}));
+
+onMounted(() => {
+  fetchRecentData();
+  socket = io();
+
+  socket.on('newData', (newRecord) => {
+    console.log('새 데이터 수신 (Socket.IO):', newRecord);
+    latestRecord.value = newRecord;
+
+    // 새 데이터를 allSensorData 배열에 추가
+    allSensorData.value.push(newRecord);
+
+    // 데이터가 너무 많아지면 오래된 데이터 제거 (선택 사항)
+    // 예: 최대 1000개 유지
+    // while (allSensorData.value.length > MAX_DATA_POINTS) {
+    //   allSensorData.value.shift();
+    // }
+  });
+
   socket.on('connect', () => {
     console.log('Socket.IO 서버에 연결되었습니다. ID:', socket.id);
   });
@@ -74,7 +157,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  // 컴포넌트 언마운트 시 Socket.IO 연결 해제
   if (socket) {
     socket.disconnect();
   }
@@ -82,13 +164,17 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 필요한 스타일 추가 */
-ul {
-  list-style: none;
-  padding: 0;
+.chart-container {
+  position: relative;
+  height: 400px;
+  width: 100%;
 }
-li {
-  margin-bottom: 5px;
-  font-size: 0.9em;
+
+hr {
+  margin: 20px 0;
+}
+
+p {
+  margin-bottom: 10px;
 }
 </style>

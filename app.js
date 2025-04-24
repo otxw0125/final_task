@@ -1,18 +1,21 @@
+require('dotenv').config(); // 환경변수 설정
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
 const http = require('http'); // http 모듈 추가
 const socketIo = require('socket.io'); // socket.io 모듈 추가
-const { MongoClient } = require('mongodb');
 const { getSensorDataByUser } = require('./models/sensorDataModel');
 
 // 시리얼 통신 관련 모듈
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
+const { MongoClient, ObjectId } = require('mongodb'); // ObjectId 추가
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+
+let currentLoggedInUserId = null; // 기본값 또는 null
 
 // session 설정
 app.use(session({
@@ -22,7 +25,7 @@ app.use(session({
 }));
 
 // MongoDB 연결 정보
-const uri = 'mongodb+srv://admin:dlghwns8391@sleepy.1jou6.mongodb.net/?retryWrites=true&w=majority';
+const uri = process.env.MONGODB_URI; // MongoDB URI를 환경변수에서 불러옴
 const dbName = 'ProjectDB';
 let db;
 
@@ -81,14 +84,16 @@ const portSerial = new SerialPort({
 // 데이터 파서 설정
 const parser = portSerial.pipe(new ReadlineParser({ delimiter: '\r\n' }));
 
-// 수동으로 시리얼 포트 열기
-portSerial.open((err) => {
-  if (err) {
-    console.error('시리얼 포트를 열 수 없습니다:', err.message);
-    // 추가: 테스트 모드로 전환하거나 후속 처리를 여기서 수행할 수 있습니다.
-    return;
-  }
-  console.log('시리얼 포트가 성공적으로 열렸습니다.');
+// 시리얼 포트 수동 오픈을 위한 API 엔드포인트
+app.post('/api/openPort', (req, res) => {
+  portSerial.open((err) => {
+    if (err) {
+      console.error('시리얼 포트를 열 수 없습니다:', err.message);
+      return res.status(500).json({ message: '시리얼 포트를 열 수 없습니다.', error: err.message });
+    }
+    console.log('시리얼 포트가 성공적으로 열렸습니다.');
+    return res.json({ message: '시리얼 포트가 성공적으로 열렸습니다.' });
+  });
 });
 
 // 에러 이벤트 처리 (이미 연결되어 있던 포트에서 발생하는 에러)
@@ -96,34 +101,53 @@ portSerial.on('error', (err) => {
   console.error(`포트 오류: ${err.message}`);
 });
 
-// 시리얼 데이터 수신 처리 (각도를 MongoDB에 저장 및 실시간 전송)
+// --- 4. parser.on('data') 핸들러 수정 ---
 parser.on('data', async (data) => {
   console.log(`수신된 데이터: ${data}`);
-  
+
   try {
-    const tilt = parseFloat(data);
-    
-    if (!isNaN(tilt)) {
-      const sensorData = {
-        userId: 'arduino_user', // 필요 시 세션 또는 설정에서 사용자 정보 대체
-        tilt: tilt,
+    const tiltValue = parseFloat(data);
+
+    if (!isNaN(tiltValue)) {
+      // MongoDB에 저장할 데이터 객체 생성
+      const sensorRecord = {
+        // --- 전역 변수에 저장된 사용자 ID 사용 ---
+        // ObjectId로 저장하고 싶다면 new ObjectId(currentLoggedInUserId) 사용 가능
+        // 단, currentLoggedInUserId가 유효한 ObjectId 문자열이어야 함
+        userId: currentLoggedInUserId,
+        tilt: { x: tiltValue, y: 0, z: 0 },
         timestamp: new Date()
       };
-      
-      // MongoDB에 센서 데이터 저장
-      await db.collection('sensorData').insertOne(sensorData);
-      
-      // 최신 각도 배열 업데이트 (최대 10개 유지)
-      latestAngleValues.push(tilt);
+
+      // db 연결 확인
+      if (!db) {
+        console.error('DB not connected, cannot save sensor data.');
+        return; // DB 없으면 저장 시도 중단
+      }
+
+      // MongoDB의 sensorData 컬렉션에 데이터 저장
+      const insertResult = await db.collection('sensorData').insertOne(sensorRecord);
+      console.log(`데이터 저장 완료 (사용자: ${currentLoggedInUserId}): ${insertResult.insertedId}`);
+
+      // 최신 각도 배열 업데이트 (모니터링용)
+      latestAngleValues.push(tiltValue);
       if (latestAngleValues.length > 10) {
         latestAngleValues.shift();
       }
-      
+
       // 실시간 데이터 전송 (Socket.IO)
-      io.emit('newData', sensorData);
+      io.emit('newData', sensorRecord);
+
+    } else {
+      console.warn(`수신된 데이터가 유효한 숫자가 아닙니다: ${data}`);
     }
   } catch (error) {
-    console.error('Error processing serial data:', error);
+    // ObjectId 변환 오류 등 처리
+    if (error.message.includes('Argument passed in must be a single String')) {
+        console.error(`잘못된 사용자 ID 형식(${currentLoggedInUserId})으로 인해 데이터 저장 실패:`, error);
+    } else {
+        console.error('시리얼 데이터 처리 또는 DB 저장 중 오류:', error);
+    }
   }
 });
 
@@ -141,22 +165,51 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
-// 로그인 POST 라우트
+// --- 2. 로그인 라우트 수정 ---
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    try {
-        const user = await db.collection('users').findOne({ username: username });
-        if (user && user.password === password) {
-            req.session.user = user;
-            res.redirect('/');
-        } else {
-            res.status(401).send('인증 실패: 잘못된 사용자 ID 또는 비밀번호.');
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('로그인 처리 중 오류 발생');
-    }
+  try {
+      // db 연결 확인
+      if (!db) {
+          console.error('DB not connected during login attempt.');
+          return res.status(500).send('서버 오류: 데이터베이스 연결 안됨');
+      }
+      const user = await db.collection('users').findOne({ username: username });
+      if (user && user.password === password) { // 비밀번호 해싱 사용 권장
+          req.session.user = user;
+          // --- 로그인 성공 시 전역 변수에 사용자 ID 저장 ---
+          currentLoggedInUserId = user._id.toString(); // ObjectId를 문자열로 변환
+          console.log(`로그인 성공: Arduino 데이터는 사용자 ID ${currentLoggedInUserId} 로 저장됩니다.`);
+          res.redirect('/');
+      } else {
+          res.status(401).send('인증 실패: 잘못된 사용자 ID 또는 비밀번호.');
+      }
+  } catch (error) {
+      console.error('로그인 처리 중 오류:', error);
+      res.status(500).send('로그인 처리 중 오류 발생');
+  }
+});
+
+// --- 3. 로그아웃 라우트 추가 (권장) ---
+app.get('/logout', (req, res) => {
+  if (req.session.user) {
+    const loggedOutUserId = req.session.user._id.toString();
+    req.session.destroy(err => {
+      if (err) {
+        console.error('로그아웃 중 세션 파괴 오류:', err);
+        return res.status(500).send('로그아웃 실패');
+      }
+      // 현재 전역 ID가 로그아웃하는 사용자의 ID와 같으면 초기화
+      if (currentLoggedInUserId === loggedOutUserId) {
+        currentLoggedInUserId = 'arduino_device'; // 기본값으로 리셋
+        console.log(`로그아웃: Arduino 데이터 사용자 ID가 기본값(${currentLoggedInUserId})으로 재설정되었습니다.`);
+      }
+      res.redirect('/login'); // 로그인 페이지로 리디렉션
+    });
+  } else {
+    res.redirect('/login');
+  }
 });
 
 // 회원가입 페이지
@@ -231,20 +284,27 @@ app.get('/analyze', async (req, res) => {
 });
 
 // API 엔드포인트: 센서 데이터를 { userId, tilt, timestamp } 형식으로 반환
+// app.js의 /api/sensor-data 라우트 수정 예시
 app.get('/api/sensor-data', async (req, res) => {
   try {
+    // 쿼리 파라미터에서 limit 값을 가져오고, 없으면 기본값 100 설정
+    const limit = parseInt(req.query.limit) || 100;
+
     const sensorData = await db.collection('sensorData')
       .find({})
-      .sort({ timestamp: -1 })
-      .limit(100)
+      .sort({ timestamp: -1 }) // 최신 데이터부터 가져옴
+      .limit(limit) // 요청된 개수만큼 제한
       .toArray();
-    
+
+    // 클라이언트에서는 시간순 정렬이 필요하므로, 여기서 다시 뒤집거나 클라이언트에서 정렬
+    // 여기서는 최신순으로 보내고 클라이언트에서 뒤집는 것이 더 효율적일 수 있음
     res.json(sensorData);
   } catch (error) {
-    console.error(error);
+    console.error('Error retrieving sensor data:', error); // 에러 로그 개선
     res.status(500).send('Error retrieving sensor data');
   }
 });
+
 
 // 클라이언트에서 센서 데이터를 불러오는 예제 (필요시 브라우저 콘솔 등에서 실행)
 // fetch('/api/sensor-data')
