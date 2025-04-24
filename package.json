@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -10,9 +11,22 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@serialport/parser-readline": "^13.0.0",
+    "axios": "^1.8.4",
+    "dotenv": "^16.5.0",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "mongodb": "^6.14.2"
+    "fetch": "^1.1.0",
+    "mongodb": "^6.14.2",
+    "serialport": "^13.0.0",
+    "socket.io": "^4.8.1",
+    "vue": "^3.5.13",
+    "winston": "^3.17.0",
+    "xmlhttprequest": "^1.8.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.3",
+    "vite": "^6.3.2"
   }
 }
