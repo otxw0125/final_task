@@ -17,3 +17,40 @@ path: 'COM4', baudRate: 9600 // 아두이노와 동일한 보드레이트 설정
 
 지금 analyze 페이지 열면 실시간으로 데이터 변경되는거 확인 가능함.
 그래서 나 이제 뭐함?
+
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
+const { MongoClient } = require('mongodb');
+const { getSensorDataByUser } = require('./models/sensorDataModel');
+
+const app = express();
+
+app.use(session({
+    secret: 'yourSecretKey',  
+    resave: false,
+    saveUninitialized: false
+}));
+
+// MongoDB 연결 정보
+const uri = 'mongodb+srv://admin:dlghwns8391@sleepy.1jou6.mongodb.net/?retryWrites=true&w=majority';
+const dbName = 'ProjectDB';
+let db;
+let latestAngleValues = []; // 최근 각도도 값을 저장할 배열
+
+// MongoDB 연결
+MongoClient.connect(uri)
+  .then(client => {
+    console.log('MongoDB에 연결되었습니다.');
+    db = client.db(dbName);
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
+    });
+  })
+  .catch(error => console.error('MongoDB 연결 오류:', error));
+
+// EJS 뷰 엔진 설정
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')음
