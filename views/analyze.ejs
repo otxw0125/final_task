@@ -1,45 +1,72 @@
-<!-- views/analyze.ejs -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>분석 결과</title>
+  <title>MTH - 분석 결과</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>분석 결과</h1>
-    <canvas id="tiltChart" width="400" height="200"></canvas>
+    <h1>앉은 자세 기울기 분석 결과</h1>
+    <p>평균 센서 데이터: <span id="avgData">-</span></p>
+    <h2>평균 기울기 분포</h2>
+    <canvas id="histogramChart" width="600" height="400"></canvas>
   </div>
+  
   <script>
-    // 서버에서 전달한 sensorData를 JavaScript 변수로 변환
-    const sensorData = <%= JSON.stringify(sensorData) %>;
-
-    // 타임스탬프와 기울기 값을 각각의 배열로 생성
-    const labels = sensorData.map(data => new Date(data.timestamp).toLocaleTimeString());
-    const tiltValues = sensorData.map(data => data.tilt);
-
-    const ctx = document.getElementById('tiltChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
+    // Socket.IO 클라이언트 연결
+    const socket = io();
+    
+    // 기존 데이터를 담을 배열 (초기 상태)
+    let sensorData = [];
+    
+    // 차트 초기화
+    const ctx = document.getElementById('histogramChart').getContext('2d');
+    let histogramChart = new Chart(ctx, {
+      type: 'bar',
       data: {
-        labels: labels,
+        labels: Array.from({length: 21}, (_, i) => (i - 10).toString()), // -10부터 10까지
         datasets: [{
-          label: '기울기 값',
-          data: tiltValues,
+          label: '센서 데이터 개수',
+          data: Array(21).fill(0),
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
           borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1,
-          fill: false
+          borderWidth: 1
         }]
       },
       options: {
         scales: {
-          y: {
-            beginAtZero: true
-          }
+          y: { beginAtZero: true, title: { display: true, text: '개수' } },
+          x: { title: { display: true, text: '기울기 값' } }
         }
       }
+    });
+    
+    // 새 데이터 수신 시 처리
+    socket.on('newData', (newSensorData) => {
+      // 수신된 데이터 배열을 기존 sensorData에 추가
+      sensorData = sensorData.concat(newSensorData);
+      
+      // 평균 계산
+      const sum = sensorData.reduce((acc, cur) => acc + cur.tilt, 0);
+      const avg = (sensorData.length > 0) ? (sum / sensorData.length).toFixed(2) : 0;
+      document.getElementById('avgData').innerText = avg;
+      
+      // 히스토그램 데이터 계산 (-10부터 10까지, 1단위)
+      const bins = Array(21).fill(0);
+      sensorData.forEach(data => {
+        let tilt = data.tilt;
+        if (tilt < -10) tilt = -10;
+        if (tilt > 10) tilt = 10;
+        const binIndex = Math.floor(tilt + 10);
+        bins[binIndex]++;
+      });
+      
+      // 차트 업데이트
+      histogramChart.data.datasets[0].data = bins;
+      histogramChart.update();
     });
   </script>
 </body>

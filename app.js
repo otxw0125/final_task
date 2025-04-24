@@ -16,7 +16,7 @@ app.use(session({
 const uri = 'mongodb+srv://admin:dlghwns8391@sleepy.1jou6.mongodb.net/?retryWrites=true&w=majority';
 const dbName = 'ProjectDB';
 let db;
-let latestRandomValues = []; // 최근 난수 값을 저장할 배열
+let latestAngleValues = []; // 최근 각도도 값을 저장할 배열
 
 // MongoDB 연결
 MongoClient.connect(uri)
@@ -37,8 +37,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 // JSON 요청을 처리하기 위한 미들웨어
-// 정적 파일 경로 설정 (CSS, JS, 이미지 등)
-app.use(express.static(path.join(__dirname, 'public')));
 
 // POST 요청의 폼 데이터 파싱
 app.use(express.urlencoded({ extended: true }));
@@ -103,17 +101,17 @@ app.post('/signup', async (req, res) => {
 
 // 모니터링 페이지 라우트
 app.get('/monitoring', (req, res) => {
-  res.render('monitoring', { latestRandomValues }); // monitoring.ejs 페이지 렌더링
+  res.render('monitoring', { latestAngleValues }); // monitoring.ejs 페이지 렌더링
 });
 
 // 센서 데이터 수신용 POST 라우트
 app.post('/api/sensorData', async (req, res) => {
   const { adjusted_angle } = req.body; // 아두이노에서 보낸 데이터 (adjusted_angle로 변경)
-  latestRandomValues.push(adjusted_angle); // 최신 각도 값을 배열에 추가 (변수명 변경)
+  latestAngleValues.push(adjusted_angle); // 최신 각도 값을 배열에 추가 (변수명 변경)
 
   // 배열의 길이를 10으로 제한 (10개 초과 시 가장 오래된 값 삭제)
-  if (latestRandomValues.length > 10) {
-    latestRandomValues.shift(); // 가장 오래된 값 삭제
+  if (latestAngleValues.length > 300) {
+    latestAngleValues.shift(); // 가장 오래된 값 삭제
   }
 
   try {
@@ -127,8 +125,8 @@ app.post('/api/sensorData', async (req, res) => {
 
 // 최신 센서 데이터 요청용 GET 라우트
 app.get('/api/latestSensorData', (req, res) => {
-  if (latestRandomValues.length > 0) {
-      res.json({ random_values: latestRandomValues }); // JSON 형식으로 응답
+  if (latestAngleValues.length > 0) {
+      res.json({ random_values: latestAngleValues }); // JSON 형식으로 응답
   } else {
       res.status(404).send('각도 값이 없습니다.');
   }

@@ -22,8 +22,8 @@
 <body>
   <h1>최신 각도 값 모니터링</h1>
   <ul>
-    <% if (latestRandomValues && latestRandomValues.length > 0) { %>
-      <% latestRandomValues.forEach(function(value, index) { %>
+    <% if (latestAngleValues && latestAngleValues.length > 0) { %>
+      <% latestAngleValues.forEach(function(value, index) { %>
         <li><%= index + 1 %>. <%= value %></li>
       <% }); %>
     <% } else { %>
