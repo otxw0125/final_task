@@ -6,11 +6,6 @@ const http = require('http'); // http 모듈 추가
 const socketIo = require('socket.io'); // socket.io 모듈 추가
 const { getSensorDataByUser } = require('./models/sensorDataModel');
 
-// 시리얼 통신 관련 모듈
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
-const { MongoClient, ObjectId } = require('mongodb'); // ObjectId 추가
-
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -74,37 +69,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// 시리얼 포트 설정 (autoOpen을 false로 하여 수동으로 열기)
-const portSerial = new SerialPort({
-  path: process.env.SERIAL_PORT || 'COM4', // 포트 이름을 환경 변수에서 불러오거나 기본값 사용
-  baudRate: 9600,
-  autoOpen: false
-});
-
-// 데이터 파서 설정
-const parser = portSerial.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-
-// 시리얼 포트 수동 오픈을 위한 API 엔드포인트
-app.post('/api/openPort', (req, res) => {
-  portSerial.open((err) => {
-    if (err) {
-      console.error('시리얼 포트를 열 수 없습니다:', err.message);
-      return res.status(500).json({ message: '시리얼 포트를 열 수 없습니다.', error: err.message });
-    }
-    console.log('시리얼 포트가 성공적으로 열렸습니다.');
-    return res.json({ message: '시리얼 포트가 성공적으로 열렸습니다.' });
-  });
-});
-
-// 에러 이벤트 처리 (이미 연결되어 있던 포트에서 발생하는 에러)
-portSerial.on('error', (err) => {
-  console.error(`포트 오류: ${err.message}`);
-});
-
-// --- 4. parser.on('data') 핸들러 수정 ---
-parser.on('data', async (data) => {
-  console.log(`수신된 데이터: ${data}`);
-
   try {
     const tiltValue = parseFloat(data);
 
@@ -131,7 +95,7 @@ parser.on('data', async (data) => {
 
       // 최신 각도 배열 업데이트 (모니터링용)
       latestAngleValues.push(tiltValue);
-      if (latestAngleValues.length > 10) {
+      if (latestAngleValues.length > 300) {
         latestAngleValues.shift();
       }
 
@@ -246,7 +210,7 @@ app.post('/api/sensorData', async (req, res) => {
   const { adjusted_angle } = req.body; // 아두이노에서 보낸 데이터 (adjusted_angle)
   
   latestAngleValues.push(adjusted_angle);
-  if (latestAngleValues.length > 10) {
+  if (latestAngleValues.length > 300) {
     latestAngleValues.shift();
   }
 
