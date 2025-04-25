@@ -4,6 +4,7 @@ const path = require('path');
 const session = require('express-session');
 const http = require('http'); // http 모듈 추가
 const socketIo = require('socket.io'); // socket.io 모듈 추가
+const { MongoClient } = require('mongodb'); // MongoClient 추가
 const { getSensorDataByUser } = require('./models/sensorDataModel');
 
 const app = express();
@@ -169,7 +170,18 @@ app.get('/monitoring', (req, res) => {
 // 센서 데이터 수신용 POST 라우트 (아두이노 또는 클라이언트에서 각도 데이터 전송)
 app.post('/api/sensorData', async (req, res) => {
   const { adjusted_angle } = req.body; // 아두이노에서 보낸 데이터 (adjusted_angle로 변경)
-  latestRandomValues.push(adjusted_angle); // 최신 각도 값을 배열에 추가 (변수명 변경)
+  
+  // 데이터 유효성 검사 (선택 사항)
+  if (adjusted_angle === undefined || adjusted_angle === null) {
+    return res.status(400).send('Invalid sensor data: adjusted_angle is missing.');
+  }
+
+  const angleValue = parseFloat(adjusted_angle);
+  if (isNaN(angleValue)) {
+    return res.status(400).send('Invalid sensor data: adjusted_angle must be a number.');
+  }
+
+  latestRandomValues.push(angleValue); // 최신 각도 값을 배열에 추가
 
   // 배열의 길이를 10으로 제한 (10개 초과 시 가장 오래된 값 삭제)
   if (latestRandomValues.length > 10) {
@@ -177,10 +189,30 @@ app.post('/api/sensorData', async (req, res) => {
   }
 
   try {
-    console.log('받은 각도 값:', adjusted_angle);
+    // DB 연결 확인
+    if (!db) {
+      console.error('DB not connected when trying to save sensor data.');
+      // 데이터를 메모리에만 저장하고 성공 응답을 보낼 수도 있지만, DB 저장이 주 목적이므로 에러 처리
+      return res.status(500).send('서버 오류: 데이터베이스 연결 안됨');
+    }
+
+    // 저장할 데이터 객체 생성
+    const sensorDataToSave = {
+      userId: currentLoggedInUserId || 'arduino_device', // 로그인한 사용자 ID 또는 기본값
+      tilt: angleValue, // 수신된 각도 값
+      timestamp: new Date() // 현재 시간 기록
+    };
+
+    // sensorData 컬렉션에 데이터 삽입
+    const result = await db.collection('sensorData').insertOne(sensorDataToSave);
+    console.log(`받은 각도 값: ${angleValue}, DB 저장 완료: ${result.insertedId}`);
+    
+    // 실시간 데이터 전송 (선택 사항)
+    io.emit('newData', sensorDataToSave); // 연결된 모든 클라이언트에게 새 데이터 전송
+
     res.status(200).send('데이터가 성공적으로 저장되었습니다.');
   } catch (error) {
-    console.error(error);
+    console.error('데이터 저장 중 오류 발생:', error);
     res.status(500).send('데이터 저장 중 오류 발생');
   }
 });
