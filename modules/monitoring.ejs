@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>각도 확인</title>
+    <link rel="stylesheet" href="/style.css">
+  <script>
+    async function fetchLatestSensorData() {
+      const response = await fetch('/api/latestSensorData'); // 서버에서 최근 난수값 요청
+      const data = await response.json();
+      const dataDisplay = document.getElementById('dataDisplay');
+
+      if (data.random_values && data.random_values.length > 0) {
+        dataDisplay.innerHTML = `최근 난수 값들: ${data.random_values.join(', ')}`;
+    } else {
+        dataDisplay.textContent = '난수 값을 가져오는 데 실패했습니다.';
+    }
+    }
+
+    // 페이지 로드 시 최근 난수 값 요청
+    window.onload = fetchLatestSensorData;
+    </script>
+</head>
+<body>
+    <h1>센서 데이터 모니터링</h1>
+    <p id="dataDisplay">최근 난수 값을 로딩 중입니다...</p> <!-- 최근 난수 값을 표시할 부분 -->
+    <ul id="dataList"></ul>
+</body>
+</html>

@@ -5,7 +5,8 @@ const session = require('express-session');
 const http = require('http'); // http 모듈 추가
 const socketIo = require('socket.io'); // socket.io 모듈 추가
 const { MongoClient } = require('mongodb'); // MongoClient 추가
-const { getSensorDataByUser } = require('./models/sensorDataModel');
+const { getSensorDataByUser } = require('./modules/sensorDataModel');
+const initializeSocketHandler = require('./modules/socketHandler');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,18 +14,20 @@ const io = socketIo(server);
 
 let currentLoggedInUserId = null; // 기본값 또는 null
 
-// session 설정
-app.use(session({
-    secret: 'yourSecretKey',  
-    resave: false,
-    saveUninitialized: false
-}));
+// session 설정 (session 미들웨어 변수에 저장장)
+const sessionMiddleware = session({
+  secret: 'yourSecretKey',
+  resave: false,
+  saveUninitialized: false
+});
+
+app.use(sessionMiddleware); //Express 앱에 session 미들웨어 적용
 
 // MongoDB 연결 정보
 const uri = process.env.MONGODB_URI; // MongoDB URI를 환경변수에서 불러옴
 const dbName = 'ProjectDB';
 let db;
-let latestRandomValues = []; // 최근 난수 값을 저장할 배열
+let socketHandler; // socketHandler 모듈을 위한 변수
 
 // MongoDB 연결
 MongoClient.connect(uri)
@@ -162,9 +165,42 @@ app.post('/signup', async (req, res) => {
   }
 });
 
-// 모니터링 페이지 라우트 (최신 각도 값 배열 전달)
-app.get('/monitoring', (req, res) => {
-  res.render('monitoring', { latestRandomValues }); // monitoring.ejs 페이지 렌더링
+app.post('/api/sensorData', async (req, res) => {
+  const { adjusted_angle } = req.body;
+  const userId = currentLoggedInUserId || 'http_post_device'; // ★★★ 사용자 ID 확인 방식 개선 필요 ★★★
+
+  if (adjusted_angle === undefined || adjusted_angle === null) {
+    return res.status(400).send('Invalid sensor data: adjusted_angle is missing.');
+  }
+  // ... (값 유효성 검사) ...
+  const angleValue = parseFloat(adjusted_angle);
+
+  try {
+    if (!db) { /* ... DB 연결 확인 ... */ return res.status(500).send('DB 연결 안됨'); }
+
+    const sensorDataToSave = {
+      userId: userId,
+      tilt: angleValue,
+      timestamp: new Date()
+    };
+
+    await db.collection('sensorData').insertOne(sensorDataToSave);
+    console.log(`받은 각도 값: ${angleValue}, 사용자: ${userId}, DB 저장 완료`);
+
+    // --- !!! socketHandler의 함수 호출 !!! ---
+    if (socketHandler) {
+        // 해당 사용자에게 실시간 데이터 전송
+        socketHandler.sendDataToUser(userId, sensorDataToSave);
+
+        // 자세 분석 및 필요한 경우 알림 전송
+        socketHandler.analyzeAndAlert(userId, sensorDataToSave);
+    }
+
+    res.status(200).send('데이터가 성공적으로 저장되었습니다.');
+  } catch (error) {
+    console.error('데이터 저장/처리 중 오류 발생:', error);
+    res.status(500).send('데이터 저장/처리 중 오류 발생');
+  }
 });
 
 // 센서 데이터 수신용 POST 라우트 (아두이노 또는 클라이언트에서 각도 데이터 전송)
