@@ -166,40 +166,77 @@ app.post('/signup', async (req, res) => {
 });
 
 app.post('/api/sensorData', async (req, res) => {
-  const { adjusted_angle } = req.body;
-  const userId = currentLoggedInUserId || 'http_post_device'; // ★★★ 사용자 ID 확인 방식 개선 필요 ★★★
+  const { x, y, z } = req.body;
+  const userId = currentLoggedInUserId || 'test'; // ★★★ 사용자 ID // ★★★ 사용자 ID 확인 방식 개선 필요 ★★★
 
-  if (adjusted_angle === undefined || adjusted_angle === null) {
-    return res.status(400).send('Invalid sensor data: adjusted_angle is missing.');
+  if (x === undefined || y === undefined || z === undefined) {
+    return res.status(400).send('Invalid sensor data: x, y, and z are required.');
   }
-  // ... (값 유효성 검사) ...
-  const angleValue = parseFloat(adjusted_angle);
+  const xValue = parseFloat(x);
+  const yValue = parseFloat(y);
+  const zValue = parseFloat(z);
+
+  if (isNaN(xValue) || isNaN(yValue) || isNaN(zValue)) {
+    return res.status(400).send('Invalid sensor data: x, y, and z must be numbers.');
+  }
 
   try {
     if (!db) { /* ... DB 연결 확인 ... */ return res.status(500).send('DB 연결 안됨'); }
 
+    // 4. 저장할 데이터 객체 생성 (accel 필드 사용)
     const sensorDataToSave = {
       userId: userId,
-      tilt: angleValue,
-      timestamp: new Date()
+      accel: { // 가속도 데이터를 위한 중첩 객체
+        x: xValue,
+        y: yValue,
+        z: zValue
+      },
+      timestamp: new Date() // 현재 시간 기록
     };
 
-    await db.collection('sensorData').insertOne(sensorDataToSave);
-    console.log(`받은 각도 값: ${angleValue}, 사용자: ${userId}, DB 저장 완료`);
+    // 5. sensorData 컬렉션에 데이터 삽입
+    const result = await db.collection('sensorData').insertOne(sensorDataToSave);
+    console.log(`Received accel data (x:${xValue}, y:${yValue}, z:${zValue}), User: ${userId}, DB Save Complete: ${result.insertedId}`); // 로그 메시지 수정
 
-    // --- !!! socketHandler의 함수 호출 !!! ---
+    // 6. !!! socketHandler의 함수 호출 (데이터 구조 변경) !!!
     if (socketHandler) {
-        // 해당 사용자에게 실시간 데이터 전송
-        socketHandler.sendDataToUser(userId, sensorDataToSave);
+      // 해당 사용자에게 실시간 데이터 전송 (새로운 구조 전달)
+      socketHandler.sendDataToUser(userId, sensorDataToSave);
 
-        // 자세 분석 및 필요한 경우 알림 전송
-        socketHandler.analyzeAndAlert(userId, sensorDataToSave);
-    }
+      // 자세 분석 및 필요한 경우 알림 전송 (새로운 구조 전달)
+      // analyzeAndAlert 함수는 이제 accel 객체를 처리하도록 수정해야 함
+      socketHandler.analyzeAndAlert(userId, sensorDataToSave);
+  }
 
     res.status(200).send('데이터가 성공적으로 저장되었습니다.');
   } catch (error) {
     console.error('데이터 저장/처리 중 오류 발생:', error);
     res.status(500).send('데이터 저장/처리 중 오류 발생');
+  }
+});
+
+// app.js에 추가할 라우트 예시
+app.get('/api/my-sensor-data', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).send('인증되지 않은 사용자입니다.');
+  }
+  const userId = req.session.user._id.toString(); // 또는 문자열 ID를 얻는 방식대로
+  const limit = parseInt(req.query.limit) || 500; // 예시: 기본 500개 제한
+
+  try {
+    if (!db) { return res.status(500).send('DB 연결 안됨'); }
+
+    const userSensorData = await db.collection('sensorData')
+      .find({ userId: userId }) // 로그인한 사용자 ID로 필터링
+      .sort({ timestamp: -1 }) // 최신 데이터부터 가져오기
+      .limit(limit)
+      .toArray();
+
+    // 프론트엔드에서 차트를 쉽게 그릴 수 있도록 시간순(오래된 것부터)으로 정렬하여 전송
+    res.json(userSensorData.reverse());
+  } catch (error) {
+    console.error('사용자 센서 데이터 조회 오류:', error);
+    res.status(500).send('센서 데이터 조회 중 오류 발생');
   }
 });
 
