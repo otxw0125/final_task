@@ -1,1 +1,35 @@
 .env
+.vscode/*
+
+# Node.js (만약 없다면 추가)
+**/node_modules/
+# Python Virtual Environment
+/posture_analyze/venv/
+# Python cache
+/posture_analyze/__pycache__/
+/posture_analyze/*.py[cod]
+/posture_analyze/*$py.class
+# 기타 Python 빌드/테스트 관련 파일 (필요시 추가)
+/posture_analyze/build/
+/posture_analyze/dist/
+/posture_analyze/.pytest_cache/
+/posture_analyze/htmlcov/
+# ========================================================
+# 운영체제 (OS) 생성 파일
+# ========================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux / Vim temporary files
+*~
+.*.swp
+*.swp
