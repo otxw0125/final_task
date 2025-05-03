@@ -1,32 +1,28 @@
-// src/sensor-data/sensor-data.service.ts
+// src/sensor-data/sensor-data.service.ts (DTO 사용 부분)
 import { Injectable, Inject } from '@nestjs/common';
 import { Db } from 'mongodb';
 import { DATABASE_CONNECTION } from '../database/database.constants';
-import { CreateSensorDataDto } from './dto/create-sensor-data.dto'; // DTO 정의 필요
+import { CreateSensorDataDto } from './dto/create-sensor-data.dto';
 
 @Injectable()
 export class SensorDataService {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: Db) {}
 
+  // create 메소드는 이미 DTO를 타입으로 사용 중
   async create(createSensorDataDto: CreateSensorDataDto): Promise<any> {
-    // DTO에서 데이터 추출 (userId, accel 등)
+    // DTO 객체에서 데이터 추출
     const sensorDataToSave = {
-      ...createSensorDataDto,
+      // userId: userId, // 컨트롤러에서 받거나 다른 방식으로 설정
+      accel: createSensorDataDto.accel, // DTO의 accel 객체 사용
       timestamp: new Date(),
     };
+    // userId 추가 로직 필요 (예: 메소드 인자로 받기)
+    // const sensorDataToSave = { userId, ...createSensorDataDto, timestamp: new Date() };
+
     const result = await this.db.collection('sensorData').insertOne(sensorDataToSave);
-    return result;
+    console.log(`Saved sensor data for user ${/*userId*/ '...'} with accel:`, createSensorDataDto.accel);
+    return result; // 또는 생성된 데이터 반환 등
   }
 
-  async findByUserId(userId: string, limit: number = 500): Promise<any[]> {
-    // 특정 사용자의 데이터를 최신순으로 가져오기
-    return this.db.collection('sensorData')
-      .find({ userId })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .toArray();
-    // 필요시 reverse() 등 추가 처리
-  }
-
-  // 다른 필요한 메소드들...
+  // ... findByUserId 등 다른 메소드 ...
 }

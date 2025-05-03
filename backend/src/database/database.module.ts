@@ -11,9 +11,15 @@ import { DATABASE_CONNECTION, DATABASE_NAME } from './database.constants';
     {
       provide: DATABASE_CONNECTION, // 주입 토큰
       useFactory: async (configService: ConfigService): Promise<Db> => {
+        const uri = configService.get<string>('MONGODB_URI');
+        const dbName = configService.get<string>('DB_NAME', 'ProjectDB'); // .env 또는 기본값
+        
+        // --- 여기부터 수정 ---
+        if (!uri) { // uri 값이 없는 경우 (환경 변수 설정 안 됨)
+        throw new Error('MongoDB URI가 설정되지 않았습니다. .env 파일을 확인하세요.');
+        }
+        // --- 여기까지 수정 ---
         try {
-          const uri = configService.get<string>('MONGODB_URI');
-          const dbName = configService.get<string>('DB_NAME', 'ProjectDB'); // .env 또는 기본값
 
           const client = await MongoClient.connect(uri); // URI 사용하여 연결
 
