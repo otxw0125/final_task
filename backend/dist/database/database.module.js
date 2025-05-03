@@ -22,9 +22,12 @@ exports.DatabaseModule = DatabaseModule = __decorate([
             {
                 provide: database_constants_1.DATABASE_CONNECTION,
                 useFactory: async (configService) => {
+                    const uri = configService.get('MONGODB_URI');
+                    const dbName = configService.get('DB_NAME', 'ProjectDB');
+                    if (!uri) {
+                        throw new Error('MongoDB URI가 설정되지 않았습니다. .env 파일을 확인하세요.');
+                    }
                     try {
-                        const uri = configService.get('MONGODB_URI');
-                        const dbName = configService.get('DB_NAME', 'ProjectDB');
                         const client = await mongodb_1.MongoClient.connect(uri);
                         console.log('MongoDB Native Driver Connected Successfully.');
                         process.on('SIGINT', async () => {
