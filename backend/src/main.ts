@@ -3,6 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common'; // ValidationPipe import
 // express-session, passport 등 다른 미들웨어 import 필요
+import * as session from 'express-session'; // express-session import
+import * as passport from 'passport'; // passport import
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,8 +21,8 @@ async function bootstrap() {
 
   // 여기에 session, passport 미들웨어 설정 추가 필요
   // app.use(session({...}));
-  // app.use(passport.initialize());
-  // app.use(passport.session());
+  app.use(passport.initialize()); // Passport 초기화
+  app.use(passport.session()); // 세션 기반 인증 활성화
 
   await app.listen(3000); // 또는 process.env.PORT 사용
 }
