@@ -3,6 +3,9 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 export declare class AuthService {
     private readonly usersService;
     constructor(usersService: UsersService);
-    signup(dto: CreateUserDto): Promise<any>;
+    signup(dto: CreateUserDto): Promise<{
+        [key: string]: any;
+        _id: import("bson").ObjectId;
+    }>;
     validateUser(username: string, password: string): Promise<any>;
 }

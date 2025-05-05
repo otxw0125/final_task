@@ -4,12 +4,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
-    findAll(): Promise<any>;
-    findOne(id: string): Promise<any>;
-    create(dto: CreateUserDto): Promise<any>;
-    update(id: string, dto: UpdateUserDto): Promise<any>;
-    remove(id: string): Promise<{
-        status: string;
-        id: string;
-    }>;
+    findAll(): Promise<import("mongodb").WithId<import("bson").Document>[]>;
+    findOne(id: string): Promise<import("mongodb").WithId<import("bson").Document>>;
+    create(dto: CreateUserDto): Promise<import("mongodb").WithId<import("bson").Document>>;
+    update(id: string, dto: UpdateUserDto): Promise<import("mongodb").WithId<import("bson").Document>>;
+    remove(id: string): Promise<void>;
 }

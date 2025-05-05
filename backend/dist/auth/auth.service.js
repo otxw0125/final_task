@@ -21,10 +21,7 @@ let AuthService = class AuthService {
     async signup(dto) {
         const salt = await bcrypt.genSalt();
         const hash = await bcrypt.hash(dto.password, salt);
-        const user = await this.usersService.create({
-            ...dto,
-            password: hash,
-        });
+        const user = await this.usersService.create({ ...dto, password: hash });
         const { password, ...rest } = user;
         return rest;
     }
@@ -35,8 +32,8 @@ let AuthService = class AuthService {
         const matched = await bcrypt.compare(password, user.password);
         if (!matched)
             throw new common_1.UnauthorizedException();
-        const { password: _, ...result } = user;
-        return result;
+        const { password: _, ...rest } = user;
+        return rest;
     }
 };
 exports.AuthService = AuthService;
