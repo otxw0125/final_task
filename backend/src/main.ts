@@ -1,29 +1,35 @@
 // src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common'; // ValidationPipe import
-// express-session, passport 등 다른 미들웨어 import 필요
-import * as session from 'express-session'; // express-session import
-import * as passport from 'passport'; // passport import
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
+
+import * as cookieParser from 'cookie-parser';
+import * as session from 'express-session';
+import * as passport from 'passport';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // NestExpressApplication 타입 지정
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // 전역 ValidationPipe 설정
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // DTO에 정의되지 않은 속성 자동 제거
-    forbidNonWhitelisted: true, // DTO에 정의되지 않은 속성이 들어오면 요청 거부
-    transform: true, // 요청 데이터를 DTO 타입으로 자동 변환 (예: 경로 파라미터 문자열 -> 숫자)
-    transformOptions: {
-      enableImplicitConversion: true, // 암시적 타입 변환 허용
-    },
+  // 전역 ValidationPipe
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+
+  // 1) 쿠키 파서
+  app.use(cookieParser());
+
+  // 2) 세션 설정 (secret은 안전한 문자열로 교체)
+  app.use(session({
+    secret: 'YOUR_SECRET_KEY',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 3600000 },  // 1시간
   }));
 
-  // 여기에 session, passport 미들웨어 설정 추가 필요
-  // app.use(session({...}));
-  app.use(passport.initialize()); // Passport 초기화
-  app.use(passport.session()); // 세션 기반 인증 활성화
+  // 3) Passport 초기화 & 세션 연동
+  app.use(passport.initialize());
+  app.use(passport.session());
 
-  await app.listen(3000); // 또는 process.env.PORT 사용
+  await app.listen(3000);
 }
 bootstrap();
