@@ -1,17 +1,13 @@
-// src/users/users.module.ts
 import { Module } from '@nestjs/common';
+import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UsersController } from './users.controller'; // UsersController가 있다면 import
-// DatabaseModule이나 MongooseModule.forFeature 등 필요한 import 추가
 
 @Module({
   imports: [
-    // 여기에 MongooseModule.forFeature(...) 또는 다른 필요한 모듈 import
+    // MongoModule이 @Global() 으로 선언되어 있으면 따로 imports 불필요
   ],
-  controllers: [UsersController], // UsersController가 있다면 포함
-  providers: [UsersService],       // UsersService를 이 모듈의 provider로 등록
-  exports: [UsersService]         // <--- 이 줄을 추가하세요!
-                                  // UsersService를 다른 모듈(예: AuthModule)에서
-                                  // 주입받아 사용할 수 있도록 내보냅니다.
+  controllers: [UsersController],
+  providers: [UsersService],
+  exports: [UsersService],  // AuthModule 등에서 재사용 가능
 })
 export class UsersModule {}

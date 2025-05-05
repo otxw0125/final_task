@@ -1,33 +1,25 @@
-// app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-// import { MongooseModule } from '@nestjs/mongoose'; // MongooseModule 제거
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { DatabaseModule } from './database/database.module'; // DatabaseModule import 추가
-import { UsersModule } from './users/users.module';
+
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { SensorDataModule } from './sensor-data/sensor-data.module';
-import { RealtimeModule } from './realtime/realtime.module';
-import { AnalysisModule } from './analysis/analysis.module';
+import { MlResultsModule } from './ml-results/ml-results.module';
+import { CommonModule } from './common/config.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-    DatabaseModule, // DatabaseModule 추가 (MongoDB 연결 담당)
-    // MongooseModule.forRootAsync({...}) 설정 제거
+    // 환경변수 로딩
+    ConfigModule.forRoot({ isGlobal: true }),
 
-    // 기능 모듈들
-    UsersModule,
+    // 기능별 모듈
     AuthModule,
+    UsersModule,
     SensorDataModule,
-    RealtimeModule,
-    AnalysisModule,
+    MlResultsModule,
+
+    // 공통 유틸 모듈
+    CommonModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

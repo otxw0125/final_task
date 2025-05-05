@@ -9,9 +9,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
-const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
-const local_strategy_1 = require("./strategies/local.strategy");
+const auth_service_1 = require("./auth.service");
+const local_strategy_1 = require("./local.strategy");
+const session_serializer_1 = require("./session.serializer");
 const users_module_1 = require("../users/users.module");
 let AuthModule = class AuthModule {
 };
@@ -23,7 +24,12 @@ exports.AuthModule = AuthModule = __decorate([
             users_module_1.UsersModule,
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy],
+        providers: [
+            auth_service_1.AuthService,
+            local_strategy_1.LocalStrategy,
+            session_serializer_1.SessionSerializer,
+        ],
+        exports: [auth_service_1.AuthService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

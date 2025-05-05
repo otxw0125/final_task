@@ -18,18 +18,23 @@ let AuthService = class AuthService {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    async signup(createUserDto) {
-        const createdUser = await this.usersService.create(createUserDto);
-        const { password, ...result } = createdUser;
-        return result;
+    async signup(dto) {
+        const salt = await bcrypt.genSalt();
+        const hash = await bcrypt.hash(dto.password, salt);
+        const user = await this.usersService.create({
+            ...dto,
+            password: hash,
+        });
+        const { password, ...rest } = user;
+        return rest;
     }
     async validateUser(username, password) {
         const user = await this.usersService.findOneByUsername(username);
         if (!user)
-            return null;
-        const passwordMatches = await bcrypt.compare(password, user.password);
-        if (!passwordMatches)
-            return null;
+            throw new common_1.UnauthorizedException();
+        const matched = await bcrypt.compare(password, user.password);
+        if (!matched)
+            throw new common_1.UnauthorizedException();
         const { password: _, ...result } = user;
         return result;
     }
