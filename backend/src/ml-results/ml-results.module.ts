@@ -3,8 +3,8 @@ import { MlResultsService } from './ml-results.service';
 import { MlResultsController } from './ml-results.controller';
 
 @Module({
-  controllers: [MlResultsController],
   providers: [MlResultsService],
+  controllers: [MlResultsController],
   exports: [MlResultsService],
 })
 export class MlResultsModule {}

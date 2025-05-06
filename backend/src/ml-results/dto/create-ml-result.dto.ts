@@ -1,3 +1,4 @@
+// src/ml-results/dto/create-ml-result.dto.ts
 import { IsString, IsISO8601 } from 'class-validator';
 
 export class CreateMlResultDto {
@@ -10,6 +11,6 @@ export class CreateMlResultDto {
   resultPayload: string;
 
   @IsISO8601()
-  // 분석된 시점
+  // 분석된 시점 (ISO 8601 문자열)
   timestamp: string;
 }

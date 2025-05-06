@@ -4,33 +4,24 @@ import { CreateMlResultDto } from './dto/create-ml-result.dto';
 
 @Controller('ml-results')
 export class MlResultsController {
-  constructor(private readonly service: MlResultsService) {}
+  constructor(private readonly mlResultsService: MlResultsService) {}
 
-  /**
-   * POST /ml-results
-   * ML 서버로부터 결과를 받아 저장
-   */
+  /** POST /ml-results: ML 서버 결과 저장 */
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(@Body() dto: CreateMlResultDto) {
-    return this.service.create(dto);
+    return this.mlResultsService.create(dto);
   }
 
-  /**
-   * GET /ml-results
-   * 전체 결과 반환
-   */
+  /** GET /ml-results: 전체 ML 결과 조회 */
   @Get()
   async findAll() {
-    return this.service.findAll();
+    return this.mlResultsService.findAll();
   }
 
-  /**
-   * GET /ml-results/:sensorId
-   * 특정 센서에 대한 결과 반환
-   */
+  /** GET /ml-results/:sensorId: 특정 센서 결과 조회 */
   @Get(':sensorId')
   async findBySensor(@Param('sensorId') sensorId: string) {
-    return this.service.findBySensor(sensorId);
+    return this.mlResultsService.findBySensor(sensorId);
   }
 }
