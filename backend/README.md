@@ -1,98 +1,79 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+다음 엔드포인트들을 순서대로 확인하시면 전체 기능이 정상 동작하는지 검증할 수 있습니다:
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+인증(Auth)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+POST /auth/signup
 
-## Description
+Body: { username, password }
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+→ 신규 사용자 생성
 
-## Project setup
+POST /auth/login
 
-```bash
-$ npm install
-```
+Body: { username, password }
 
-## Compile and run the project
+→ 세션 발급 및 로그인
 
-```bash
-# development
-$ npm run start
+POST /auth/logout
 
-# watch mode
-$ npm run start:dev
+→ 세션 파기 및 로그아웃
 
-# production mode
-$ npm run start:prod
-```
+GET /auth/profile
 
-## Run tests
+→ 로그인 상태·유저 정보 확인
 
-```bash
-# unit tests
-$ npm run test
+사용자 관리(Users)
 
-# e2e tests
-$ npm run test:e2e
+GET /users
 
-# test coverage
-$ npm run test:cov
-```
+→ 모든 사용자 조회
 
-## Deployment
+GET /users/:id
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+→ 단일 사용자 조회
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+POST /users
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+Body: { username, password }
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+→ 사용자 생성
 
-## Resources
+PATCH /users/:id
 
-Check out a few resources that may come in handy when working with NestJS:
+Body: { username?, password? }
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+→ 사용자 정보 업데이트
 
-## Support
+DELETE /users/:id
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+→ 사용자 삭제
 
-## Stay in touch
+센서 데이터(Sensor-Data)
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+POST /sensor-data
 
-## License
+Body: { payload: "x,y,z" }
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+→ 가속도 데이터 파싱·저장
+
+GET /sensor-data
+
+→ 저장된 전체 센서 데이터 조회
+
+ML 분석 결과(Ml-Results)
+
+POST /ml-results
+
+Body: { sensorId, resultPayload, timestamp }
+
+→ ML 서버 분석 결과 저장
+
+GET /ml-results
+
+→ 전체 ML 결과 조회
+
+GET /ml-results/:sensorId
+
+→ 특정 센서 ID 연관 ML 결과 조회
+
+각 엔드포인트에 대해 Insomnia 또는 curl로 요청을 보내 응답 코드를 확인해 보시고, 정상(2xx) 응답과 기대하는 JSON 구조가 나오는지 검증하세요.
