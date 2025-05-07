@@ -3,9 +3,9 @@ import { Db, WithId, Document } from 'mongodb';
 import { CreateSensorDataDto } from './dto/create-sensor-data.dto';
 
 type SensorRecord = {
-  x: number;
-  y: number;
-  z: number;
+  x: string;
+  y: string;
+  z: string;
   raw: string;
   timestamp: Date;
 };
@@ -43,13 +43,21 @@ export class SensorDataService {
    * 센서 데이터 생성 및 저장
    */
   async create(dto: CreateSensorDataDto): Promise<WithId<Document & SensorRecord>> {
-    const { x, y, z } = this.parsePayload(dto.payload);
+    const { x_accel, y_accel, z_accel, timestamp } = dto;
+  
     const record: SensorRecord = {
-      x, y, z,
-      raw: dto.payload,
-      timestamp: new Date(),
+      x: x_accel.toFixed(2),
+      y: y_accel.toFixed(2),
+      z: z_accel.toFixed(2),
+      raw: `${x_accel.toFixed(2)},${y_accel.toFixed(2)},${z_accel.toFixed(2)}`,
+      timestamp: new Date(timestamp),
     };
+  
     const result = await this.coll.insertOne(record);
+  
+    // ✅ 저장 로그 출력
+    console.log('[SensorDataService] Data inserted:', record);
+  
     return this.coll.findOne({ _id: result.insertedId });
   }
 

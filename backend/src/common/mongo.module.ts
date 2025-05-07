@@ -14,6 +14,7 @@ const MONGO_DB     = 'MONGO_DB';
       provide: MONGO_CLIENT,
       useFactory: async (cs: ConfigService) => {
         const uri = cs.get<string>('MONGODB_URI'); // <--- 여기를 수정!
+        console.log('ENV VALUE (MONGODB_URI):', cs.get<string>('MONGODB_URI'));
         if (!uri) { // uri가 없는 경우 에러 처리 추가
           throw new Error('MongoDB URI (MONGODB_URI) is not defined in your environment variables.');
         }

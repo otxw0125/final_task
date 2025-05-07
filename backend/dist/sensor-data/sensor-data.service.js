@@ -38,13 +38,16 @@ let SensorDataService = class SensorDataService {
         return { x, y, z };
     }
     async create(dto) {
-        const { x, y, z } = this.parsePayload(dto.payload);
+        const { x_accel, y_accel, z_accel, timestamp } = dto;
         const record = {
-            x, y, z,
-            raw: dto.payload,
-            timestamp: new Date(),
+            x: x_accel.toFixed(2),
+            y: y_accel.toFixed(2),
+            z: z_accel.toFixed(2),
+            raw: `${x_accel.toFixed(2)},${y_accel.toFixed(2)},${z_accel.toFixed(2)}`,
+            timestamp: new Date(timestamp),
         };
         const result = await this.coll.insertOne(record);
+        console.log('[SensorDataService] Data inserted:', record);
         return this.coll.findOne({ _id: result.insertedId });
     }
     async findAll() {

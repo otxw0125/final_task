@@ -12,11 +12,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSensorDataDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateSensorDataDto {
-    payload;
+    x_accel;
+    y_accel;
+    z_accel;
+    timestamp;
 }
 exports.CreateSensorDataDto = CreateSensorDataDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateSensorDataDto.prototype, "payload", void 0);
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateSensorDataDto.prototype, "x_accel", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateSensorDataDto.prototype, "y_accel", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateSensorDataDto.prototype, "z_accel", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateSensorDataDto.prototype, "timestamp", void 0);
 //# sourceMappingURL=create-sensor-data.dto.js.map

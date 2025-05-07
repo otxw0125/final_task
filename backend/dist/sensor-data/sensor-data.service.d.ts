@@ -1,9 +1,9 @@
 import { Db, WithId, Document } from 'mongodb';
 import { CreateSensorDataDto } from './dto/create-sensor-data.dto';
 type SensorRecord = {
-    x: number;
-    y: number;
-    z: number;
+    x: string;
+    y: string;
+    z: string;
     raw: string;
     timestamp: Date;
 };

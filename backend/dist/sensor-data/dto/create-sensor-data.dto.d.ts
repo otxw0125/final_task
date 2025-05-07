@@ -1,3 +1,6 @@
 export declare class CreateSensorDataDto {
-    payload: string;
+    x_accel: number;
+    y_accel: number;
+    z_accel: number;
+    timestamp: number;
 }

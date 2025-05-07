@@ -4,16 +4,16 @@ export declare class SensorDataController {
     private readonly service;
     constructor(service: SensorDataService);
     create(dto: CreateSensorDataDto): Promise<import("mongodb").WithId<import("bson").Document & {
-        x: number;
-        y: number;
-        z: number;
+        x: string;
+        y: string;
+        z: string;
         raw: string;
         timestamp: Date;
     }>>;
     findAll(): Promise<import("mongodb").WithId<import("bson").Document & {
-        x: number;
-        y: number;
-        z: number;
+        x: string;
+        y: string;
+        z: string;
         raw: string;
         timestamp: Date;
     }>[]>;
