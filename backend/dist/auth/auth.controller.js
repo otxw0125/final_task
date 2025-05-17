@@ -26,11 +26,22 @@ let AuthController = class AuthController {
         const user = await this.authService.signup(dto);
         return { status: 'ok', user };
     }
-    async login(req) {
+    async login(req, res) {
+        await new Promise((resolve, reject) => {
+            req.logIn(req.user, err => {
+                if (err)
+                    return reject(err);
+                resolve();
+            });
+        });
         return { status: 'ok', user: req.user };
     }
     async logout(req, res) {
-        req.logout(() => {
+        req.logout(err => {
+            if (err) {
+                return res.status(common_1.HttpStatus.INTERNAL_SERVER_ERROR).json({ status: 'error' });
+            }
+            res.clearCookie('connect.sid');
             res.status(common_1.HttpStatus.OK).json({ status: 'logged out' });
         });
     }
@@ -52,14 +63,15 @@ __decorate([
 __decorate([
     (0, common_1.UseGuards)(local_auth_guard_1.LocalAuthGuard),
     (0, common_1.Post)('login'),
-    __param(0, (0, common_1.Request)()),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('logout'),
-    __param(0, (0, common_1.Request)()),
+    __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
@@ -67,7 +79,7 @@ __decorate([
 ], AuthController.prototype, "logout", null);
 __decorate([
     (0, common_1.Get)('profile'),
-    __param(0, (0, common_1.Request)()),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)

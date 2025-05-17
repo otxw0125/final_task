@@ -1,24 +1,26 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-
-import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { LocalStrategy } from './local.strategy';
-import { SessionSerializer } from './session.serializer';
 import { UsersModule } from '../users/users.module';
+import { JwtModule } from '@nestjs/jwt';
+import { LocalStrategy } from './local.strategy';
+import { JwtStrategy } from './jwt.strategy';
+import { ConfigModule } from '../config/config.module';
 
 @Module({
   imports: [
-    // 세션 기반 로컬 인증 전략 등록
-    PassportModule.register({ defaultStrategy: 'local', session: true }),
-    UsersModule,  // AuthService와 SessionSerializer 의존
+    UsersModule,
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get('JWT_SECRET'),
+        signOptions: { expiresIn: '1h' },
+      }),
+      inject: [ConfigService],
+    }),
   ],
-  controllers: [AuthController],
-  providers: [
-    AuthService,
-    LocalStrategy,
-    SessionSerializer,
-  ],
+  providers: [AuthService, LocalStrategy, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MlResultsService } from './ml-results.service';
+import { MlResultsService } from './ml-result.service';
 
 describe('MlResultsService', () => {
   let service: MlResultsService;

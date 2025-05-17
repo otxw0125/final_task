@@ -12,12 +12,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSensorDataDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateSensorDataDto {
+    username;
     x_accel;
     y_accel;
     z_accel;
     timestamp;
 }
 exports.CreateSensorDataDto = CreateSensorDataDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSensorDataDto.prototype, "username", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)

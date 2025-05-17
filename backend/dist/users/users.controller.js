@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
+const session_auth_guard_1 = require("../common/guards/session-auth.guard");
 const create_user_dto_1 = require("./dto/create-user.dto");
 const update_user_dto_1 = require("./dto/update-user.dto");
 let UsersController = class UsersController {
@@ -27,6 +28,9 @@ let UsersController = class UsersController {
     }
     findOne(id) {
         return this.usersService.findOne(id);
+    }
+    async getProfile(req) {
+        return this.usersService.findOneByUsername(req.user.username);
     }
     create(dto) {
         return this.usersService.create(dto);
@@ -52,6 +56,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.UseGuards)(session_auth_guard_1.SessionAuthGuard),
+    (0, common_1.Get)('profile'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getProfile", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, transform: true })),

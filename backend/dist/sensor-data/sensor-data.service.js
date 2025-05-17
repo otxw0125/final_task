@@ -17,41 +17,64 @@ const common_1 = require("@nestjs/common");
 const mongodb_1 = require("mongodb");
 let SensorDataService = class SensorDataService {
     db;
-    collectionName = 'sensor-data';
-    coll;
     constructor(db) {
         this.db = db;
-        this.coll = this.db.collection(this.collectionName);
     }
-    parsePayload(payload) {
-        const parts = payload.split(',').map(p => p.trim());
-        if (parts.length !== 3) {
-            throw new common_1.BadRequestException('Invalid payload format, expected "x,y,z"');
-        }
-        const [xStr, yStr, zStr] = parts;
-        const x = parseFloat(xStr);
-        const y = parseFloat(yStr);
-        const z = parseFloat(zStr);
-        if ([x, y, z].some(n => isNaN(n))) {
-            throw new common_1.BadRequestException('Payload contains non-numeric values');
-        }
-        return { x, y, z };
-    }
-    async create(dto) {
-        const { x_accel, y_accel, z_accel, timestamp } = dto;
+    async createRaw(dto) {
         const record = {
-            x: x_accel.toFixed(2),
-            y: y_accel.toFixed(2),
-            z: z_accel.toFixed(2),
-            raw: `${x_accel.toFixed(2)},${y_accel.toFixed(2)},${z_accel.toFixed(2)}`,
-            timestamp: new Date(timestamp),
+            username: dto.username,
+            raw: `${dto.x_accel},${dto.y_accel},${dto.z_accel}`,
+            timestamp: new Date(dto.timestamp),
         };
-        const result = await this.coll.insertOne(record);
-        console.log('[SensorDataService] Data inserted:', record);
-        return this.coll.findOne({ _id: result.insertedId });
+        const result = await this.db.collection('sensor-data').insertOne(record);
+        const inserted = await this.db
+            .collection('sensor-data')
+            .findOne({ _id: result.insertedId });
+        if (!inserted) {
+            throw new Error(`Inserted raw record not found (id: ${result.insertedId})`);
+        }
+        return inserted;
     }
-    async findAll() {
-        return this.coll.find().sort({ timestamp: -1 }).toArray();
+    async findAllRaw() {
+        return this.db.collection('sensor-data')
+            .find()
+            .sort({ timestamp: -1 })
+            .toArray();
+    }
+    async processNewData() {
+        const query = this.lastProcessedId
+            ? { _id: { $gt: this.lastProcessedId } }
+            : {};
+        const rawColl = this.db.collection(this.rawCollName);
+        const raws = await rawColl
+            .find(query)
+            .sort({ _id: 1 })
+            .toArray();
+        if (raws.length === 0)
+            return 0;
+        this.lastProcessedId = raws[raws.length - 1]._id;
+        const groups = new Map();
+        for (const r of raws) {
+            const [x, y, z] = r.raw.split(',').map(s => parseFloat(s));
+            const θx = Math.atan2(x, Math.hypot(y, z)) * (180 / Math.PI);
+            const θy = Math.atan2(y, Math.hypot(x, z)) * (180 / Math.PI);
+            const θz = Math.atan2(z, Math.hypot(x, y)) * (180 / Math.PI);
+            const arr = groups.get(r.username) || [];
+            arr.push([+θx.toFixed(2), +θy.toFixed(2), +θz.toFixed(2)]);
+            groups.set(r.username, arr);
+        }
+        const batchColl = this.db.collection(this.batchCollName);
+        for (const [username, angles] of groups.entries()) {
+            for (let i = 0; i < angles.length; i += 20) {
+                const chunk = angles.slice(i, i + 20);
+                await batchColl.insertOne({
+                    username,
+                    angles: chunk,
+                    createdAt: new Date(),
+                });
+            }
+        }
+        return raws.length;
     }
 };
 exports.SensorDataService = SensorDataService;

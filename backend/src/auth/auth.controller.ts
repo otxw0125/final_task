@@ -9,6 +9,7 @@ import {
   Req,            // ← Request 데코레이터 대신 Req
 } from '@nestjs/common';
 import type { Request, Response } from 'express';  // ← Express Request/Response 타입
+import { User } from '../users/interface/user.interface';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -25,22 +26,21 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
     }
   
     // 2) 로그인 (passport-local)
-    @Post('login')
+      @UseGuards(LocalAuthGuard)
+      @Post('login')
       async login(
-        @Req() req: Request,
+        @Req() req: Request & { user: User },          // User를 import 했으니 이제 인식됩니다
         @Res({ passthrough: true }) res: Response,
       ) {
-        // Passport.authenticate → req.user 세팅된 상태
-        // 세션에 저장하도록 req.logIn 호출
-        await new Promise<void>((resolve, reject) => {
-          req.logIn(req.user, err => {
-            if (err) return reject(err);
-            resolve();
-          });
+        // 런타임에서 req.user는 항상 User이므로 타입 안전하게 logIn 호출
+      await new Promise<void>((resolve, reject) => {
+        req.logIn(req.user, err => {
+          if (err) return reject(err);
+          resolve();
         });
-        // 이제 express-session이 세션을 저장하고, Set-Cookie 헤더를 응답에 붙입니다.
-        return { status: 'ok', user: req.user };
-       }
+      });
+      return { status: 'ok', user: req.user };
+    }
   
     // 3) 로그아웃
     @Post('logout')

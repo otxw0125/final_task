@@ -1,19 +1,16 @@
-import { Db, WithId, Document } from 'mongodb';
+import { Db, ObjectId, WithId } from 'mongodb';
 import { CreateSensorDataDto } from './dto/create-sensor-data.dto';
-type SensorRecord = {
-    x: string;
-    y: string;
-    z: string;
+type RawRecord = {
+    _id?: ObjectId;
+    username: string;
     raw: string;
     timestamp: Date;
 };
 export declare class SensorDataService {
     private readonly db;
-    private readonly collectionName;
-    private readonly coll;
     constructor(db: Db);
-    private parsePayload;
-    create(dto: CreateSensorDataDto): Promise<WithId<Document & SensorRecord>>;
-    findAll(): Promise<WithId<Document & SensorRecord>[]>;
+    createRaw(dto: CreateSensorDataDto): Promise<WithId<RawRecord>>;
+    findAllRaw(): Promise<WithId<RawRecord>[]>;
+    processNewData(): Promise<number>;
 }
 export {};

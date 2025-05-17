@@ -22,10 +22,14 @@ let SensorDataController = class SensorDataController {
         this.service = service;
     }
     async create(dto) {
-        return this.service.create(dto);
+        return this.service.createRaw(dto);
     }
     async findAll() {
-        return this.service.findAll();
+        return this.service.findAllRaw();
+    }
+    async process() {
+        const count = await this.service.processNewData();
+        return { processed: count };
     }
 };
 exports.SensorDataController = SensorDataController;
@@ -43,6 +47,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], SensorDataController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Post)('process'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SensorDataController.prototype, "process", null);
 exports.SensorDataController = SensorDataController = __decorate([
     (0, common_1.Controller)('sensor-data'),
     __metadata("design:paramtypes", [sensor_data_service_1.SensorDataService])

@@ -1,3 +1,5 @@
+import type { Request, Response } from 'express';
+import { User } from '../users/interface/user.interface';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 export declare class AuthController {
@@ -10,16 +12,18 @@ export declare class AuthController {
             _id: import("bson").ObjectId;
         };
     }>;
-    login(req: any): Promise<{
+    login(req: Request & {
+        user: User;
+    }, res: Response): Promise<{
         status: string;
-        user: any;
+        user: Express.User & User;
     }>;
-    logout(req: any, res: any): Promise<void>;
-    getProfile(req: any): {
+    logout(req: Request, res: Response): Promise<void>;
+    getProfile(req: Request): {
         authenticated: boolean;
         user?: undefined;
     } | {
         authenticated: boolean;
-        user: any;
+        user: Express.User;
     };
 }
