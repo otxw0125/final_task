@@ -34,7 +34,7 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
       ) {
         // 런타임에서 req.user는 항상 User이므로 타입 안전하게 logIn 호출
       await new Promise<void>((resolve, reject) => {
-        req.logIn(req.user, err => {
+        req.logIn(!req.user, err => {
           if (err) return reject(err);
           resolve();
         });
