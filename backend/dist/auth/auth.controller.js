@@ -28,7 +28,7 @@ let AuthController = class AuthController {
     }
     async login(req, res) {
         await new Promise((resolve, reject) => {
-            req.logIn(req.user, err => {
+            req.logIn(!req.user, err => {
                 if (err)
                     return reject(err);
                 resolve();

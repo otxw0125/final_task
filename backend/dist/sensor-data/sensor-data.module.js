@@ -8,21 +8,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SensorDataModule = void 0;
 const common_1 = require("@nestjs/common");
-const schedule_1 = require("@nestjs/schedule");
-const axios_1 = require("@nestjs/axios");
 const sensor_data_service_1 = require("./sensor-data.service");
-const sensor_data_scheduler_1 = require("./sensor-data.scheduler");
 const sensor_data_controller_1 = require("./sensor-data.controller");
+const database_module_1 = require("../database/database.module");
 let SensorDataModule = class SensorDataModule {
 };
 exports.SensorDataModule = SensorDataModule;
 exports.SensorDataModule = SensorDataModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            schedule_1.ScheduleModule.forRoot(),
-            axios_1.HttpModule,
-        ],
-        providers: [sensor_data_service_1.SensorDataService, sensor_data_scheduler_1.SensorDataScheduler],
+        imports: [database_module_1.DatabaseModule],
+        providers: [sensor_data_service_1.SensorDataService],
         controllers: [sensor_data_controller_1.SensorDataController],
     })
 ], SensorDataModule);

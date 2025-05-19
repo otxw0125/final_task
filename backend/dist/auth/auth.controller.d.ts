@@ -8,8 +8,8 @@ export declare class AuthController {
     signup(dto: CreateUserDto): Promise<{
         status: string;
         user: {
-            [key: string]: any;
-            _id: import("bson").ObjectId;
+            username: string;
+            createdAt: Date;
         };
     }>;
     login(req: Request & {

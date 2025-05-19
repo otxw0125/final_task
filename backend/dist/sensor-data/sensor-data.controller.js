@@ -15,44 +15,38 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SensorDataController = void 0;
 const common_1 = require("@nestjs/common");
 const sensor_data_service_1 = require("./sensor-data.service");
-const create_sensor_data_dto_1 = require("./dto/create-sensor-data.dto");
+const auth_guard_1 = require("../auth/auth.guard");
 let SensorDataController = class SensorDataController {
-    service;
-    constructor(service) {
-        this.service = service;
+    sensorDataService;
+    constructor(sensorDataService) {
+        this.sensorDataService = sensorDataService;
     }
-    async create(dto) {
-        return this.service.createRaw(dto);
+    async postRaw(req, body) {
+        return this.sensorDataService.createRaw(req.user._id, { x: body.x, y: body.y, z: body.z, timestamp: new Date(body.timestamp) });
     }
-    async findAll() {
-        return this.service.findAllRaw();
-    }
-    async process() {
-        const count = await this.service.processNewData();
-        return { processed: count };
+    async getRaw(req, limit) {
+        return this.sensorDataService.getLatestRaw(req.user._id, parseInt(limit) || 10);
     }
 };
 exports.SensorDataController = SensorDataController;
 __decorate([
-    (0, common_1.Post)(),
-    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, transform: true })),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Post)('raw'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_sensor_data_dto_1.CreateSensorDataDto]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
-], SensorDataController.prototype, "create", null);
+], SensorDataController.prototype, "postRaw", null);
 __decorate([
-    (0, common_1.Get)(),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Get)('raw'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
-], SensorDataController.prototype, "findAll", null);
-__decorate([
-    (0, common_1.Post)('process'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], SensorDataController.prototype, "process", null);
+], SensorDataController.prototype, "getRaw", null);
 exports.SensorDataController = SensorDataController = __decorate([
     (0, common_1.Controller)('sensor-data'),
     __metadata("design:paramtypes", [sensor_data_service_1.SensorDataService])

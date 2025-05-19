@@ -7,6 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 @Injectable()
 export class ConfigService {
   get(key: string): string {
-    return process.env[key];
+    // 수정: undefined 타입 처리
+    return process.env[key] || '';
   }
 }

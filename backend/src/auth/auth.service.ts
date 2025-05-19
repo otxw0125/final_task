@@ -13,7 +13,8 @@ export class AuthService {
   async signup(dto: CreateUserDto) {
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(dto.password, salt);
-    const user = await this.usersService.create({ ...dto, password: hash });
+    // 수정: UsersService.create 함수 호출 방식 변경
+    const user = await this.usersService.create(dto.username, hash);
     const { password, ...rest } = user;
     return rest;
   }
@@ -22,7 +23,8 @@ export class AuthService {
    * passport-local 전략에서 사용자 검증 시 호출
    */
   async validateUser(username: string, password: string): Promise<any> {
-    const user = await this.usersService.findOneByUsername(username);
+    // 수정: findOneByUsername -> findByUsername
+    const user = await this.usersService.findByUsername(username);
     if (!user) throw new UnauthorizedException();
     const matched = await bcrypt.compare(password, user.password);
     if (!matched) throw new UnauthorizedException();

@@ -4,8 +4,8 @@ export declare class AuthService {
     private readonly usersService;
     constructor(usersService: UsersService);
     signup(dto: CreateUserDto): Promise<{
-        [key: string]: any;
-        _id: import("bson").ObjectId;
+        username: string;
+        createdAt: Date;
     }>;
     validateUser(username: string, password: string): Promise<any>;
 }

@@ -4,7 +4,7 @@ declare const LocalStrategy_base: new (...args: [] | [options: import("passport-
     validate(...args: any[]): unknown;
 };
 export declare class LocalStrategy extends LocalStrategy_base {
-    private readonly authService;
+    private authService;
     constructor(authService: AuthService);
     validate(username: string, password: string): Promise<any>;
 }

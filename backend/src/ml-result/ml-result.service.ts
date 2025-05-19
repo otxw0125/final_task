@@ -1,12 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Collection, ObjectId } from 'mongodb';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
-export class MlResultService {
+export class MlResultService implements OnModuleInit {
   private collection: Collection;
+  
   constructor(private dbService: DatabaseService) {
-    this.collection = this.dbService.getDb().collection('mlResults');
+    // 생성자에서 데이터베이스 접근 코드 제거
+  }
+
+  // 모듈 초기화 시 컬렉션 설정
+  async onModuleInit() {
+    const db = this.dbService.getDb();
+    this.collection = db.collection('mlResults');
   }
 
   async create(userId: string, result: any) {

@@ -1,14 +1,15 @@
-import { Db, WithId, Document } from 'mongodb';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-export declare class UsersService {
-    private readonly db;
-    private readonly collection;
-    constructor(db: Db);
-    create(dto: CreateUserDto): Promise<WithId<Document>>;
-    findAll(): Promise<WithId<Document>[]>;
-    findOne(id: string): Promise<WithId<Document>>;
-    findOneByUsername(username: string): Promise<WithId<Document> | null>;
-    update(id: string, dto: UpdateUserDto): Promise<WithId<Document>>;
-    remove(id: string): Promise<void>;
+import { OnModuleInit } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+export declare class UsersService implements OnModuleInit {
+    private dbService;
+    private collection;
+    constructor(dbService: DatabaseService);
+    onModuleInit(): Promise<void>;
+    create(username: string, password: string): Promise<{
+        username: string;
+        password: string;
+        createdAt: Date;
+    }>;
+    findByUsername(username: string): Promise<import("mongodb").WithId<import("bson").Document> | null>;
+    findById(id: string): Promise<import("mongodb").WithId<import("bson").Document> | null>;
 }
