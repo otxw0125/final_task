@@ -1,0 +1,10 @@
+# Common environment variables (local development)
+NODE_ENV=development
+MONGODB_URI=mongodb+srv://admin:Dlghwns8391@sleepy.1jou6.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DB_NAME=ProjectDB
+SESSION_SECRET=your_secret_key
+JWT_SECRET=Super$ecretKey123!
+JWT_EXPIRES_IN=3600s
+
+# ML service connection settings (if needed later)
+ML_SERVICE_BASE_URL=http://localhost:5000/api
