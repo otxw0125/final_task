@@ -4,7 +4,7 @@
             "outputFile": "com.cookandroid.mth.app-mergeDebugResources-27:/values-en-rAU/values-en-rAU.xml",
             "map": [
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\c6770eda00af6c105866b6db09ea3053\\transformed\\core-1.9.0\\res\\values-en-rAU\\values-en-rAU.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\726d66602f9f78a4f54589af7ee1a575\\transformed\\core-1.9.0\\res\\values-en-rAU\\values-en-rAU.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\da10056dbb7cd7dc7f502eafa241998a\\transformed\\appcompat-1.6.1\\res\\values-en-rAU\\values-en-rAU.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\adf8c506d6c669d3779bd40ddba4ff1b\\transformed\\appcompat-1.6.1\\res\\values-en-rAU\\values-en-rAU.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",

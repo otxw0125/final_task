@@ -4,7 +4,24 @@
             "outputFile": "com.cookandroid.mth.app-mergeDebugResources-27:/values-lo/values-lo.xml",
             "map": [
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\5a2a6f19e7b6a7eeb003cf8ca100ff76\\transformed\\material-1.9.0\\res\\values-lo\\values-lo.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\726d66602f9f78a4f54589af7ee1a575\\transformed\\core-1.9.0\\res\\values-lo\\values-lo.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    },
+                    "to": {
+                        "startLines": "96",
+                        "startColumns": "4",
+                        "startOffsets": "7881",
+                        "endColumns": "100",
+                        "endOffsets": "7977"
+                    }
+                },
+                {
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\1342f1a66419450178ca742a61a477c0\\transformed\\material-1.9.0\\res\\values-lo\\values-lo.xml",
                     "from": {
                         "startLines": "2,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -23,24 +40,7 @@
                     }
                 },
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\c6770eda00af6c105866b6db09ea3053\\transformed\\core-1.9.0\\res\\values-lo\\values-lo.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "100",
-                        "endOffsets": "151"
-                    },
-                    "to": {
-                        "startLines": "96",
-                        "startColumns": "4",
-                        "startOffsets": "7881",
-                        "endColumns": "100",
-                        "endOffsets": "7977"
-                    }
-                },
-                {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\da10056dbb7cd7dc7f502eafa241998a\\transformed\\appcompat-1.6.1\\res\\values-lo\\values-lo.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\adf8c506d6c669d3779bd40ddba4ff1b\\transformed\\appcompat-1.6.1\\res\\values-lo\\values-lo.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",

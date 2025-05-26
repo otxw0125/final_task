@@ -4,7 +4,7 @@
             "outputFile": "com.cookandroid.mth.app-mergeDebugResources-27:/values-v23/values-v23.xml",
             "map": [
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\da10056dbb7cd7dc7f502eafa241998a\\transformed\\appcompat-1.6.1\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\adf8c506d6c669d3779bd40ddba4ff1b\\transformed\\appcompat-1.6.1\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,20,34,35,36,39,43,44,45,46",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -15,7 +15,7 @@
                     }
                 },
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\6a6579e63b3bd8c175ae83956b0b8ec8\\transformed\\cardview-1.0.0\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\756486cd46c433cb66d9e8ec274857d4\\transformed\\cardview-1.0.0\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -34,7 +34,7 @@
                     }
                 },
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\5a2a6f19e7b6a7eeb003cf8ca100ff76\\transformed\\material-1.9.0\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\1342f1a66419450178ca742a61a477c0\\transformed\\material-1.9.0\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2,5,8,13,17,20,23,26,31,34,38",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4",

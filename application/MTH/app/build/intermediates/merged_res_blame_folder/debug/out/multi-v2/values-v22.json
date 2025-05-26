@@ -4,7 +4,7 @@
             "outputFile": "com.cookandroid.mth.app-mergeDebugResources-27:/values-v22/values-v22.xml",
             "map": [
                 {
-                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\da10056dbb7cd7dc7f502eafa241998a\\transformed\\appcompat-1.6.1\\res\\values-v22\\values-v22.xml",
+                    "source": "C:\\CookAndroid\\.gradle\\caches\\transforms-3\\adf8c506d6c669d3779bd40ddba4ff1b\\transformed\\appcompat-1.6.1\\res\\values-v22\\values-v22.xml",
                     "from": {
                         "startLines": "2,3,4,9",
                         "startColumns": "4,4,4,4",

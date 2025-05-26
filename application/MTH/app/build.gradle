@@ -1,8 +1,5 @@
-plugins {
-    id 'com.android.application'
-    id 'io.realm.kotlin'
-}
-
+apply plugin: 'com.android.application'
+apply plugin: 'realm-android'
 android {
     namespace 'com.cookandroid.mth'
     compileSdk 34
@@ -38,8 +35,8 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
     // MongoDB Realm Android SDK (직접 연결용)
-    implementation 'io.realm:realm-android-library:10.15.1'
-    implementation 'io.realm:realm-android-kotlin-extensions:10.15.1'
+    implementation 'io.realm:realm-android-library:10.14.0'
+    implementation 'io.realm:realm-android-kotlin-extensions:10.14.0'
 
     // MPAndroidChart (차트)
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'

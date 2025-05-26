@@ -13,51 +13,155 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a4dc2167-4fad-4900-a220-6cd2ed422fa2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/proguard-rules.pro" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/androidTest/java/com/cookandroid/mth/ExampleInstrumentedTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/cookandroid/mth/MainActivity.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/ic_launcher_background.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/ic_notification.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_main.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-hdpi/ic_launcher.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-mdpi/ic_launcher.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/values-night/themes.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/colors.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/strings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/themes.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/xml/backup_rules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/xml/data_extraction_rules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.vscode/settings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/cookandroid/mth/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/cookandroid/mth/MainActivity.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/res/xml/network_security_config.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/test/java/com/cookandroid/mth/ExampleUnitTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradle.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradlew" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradlew.bat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/settings.gradle" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../bluetooth/bluetooth.ino" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/.prettierrc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.controller.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.controller.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.controller.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.module.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.module.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.module.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.service.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.service.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/app.service.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.controller.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.controller.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.controller.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.module.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.module.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.module.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.service.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.service.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/auth.service.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/guards/local-auth.guard.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/guards/local-auth.guard.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/guards/local-auth.guard.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/local.strategy.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/local.strategy.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/auth/local.strategy.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/main.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/main.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/main.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/dto/create-sensor-data.dto.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/dto/create-sensor-data.dto.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/dto/create-sensor-data.dto.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.controller.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.controller.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.controller.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.module.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.module.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.module.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.service.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.service.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/sensor-data/sensor-data.service.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/tsconfig.build.tsbuildinfo" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/dto/create-user.dto.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/dto/create-user.dto.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/dto/create-user.dto.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.controller.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.controller.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.controller.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.module.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.module.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.module.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.service.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.service.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/dist/users/users.service.js.map" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/eslint.config.mjs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/nest-cli.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/app.controller.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/app.controller.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/app.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/app.service.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/auth.controller.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/auth.controller.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/auth.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/auth.service.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/auth.service.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/guards/local-auth.guard.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/local.strategy.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/auth/session.serializer.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/common/common.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/common/config.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/common/express.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/common/guards/jwt-auth.guard.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/common/logger.service.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/common/mongo.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/common/pipes/validation.pipe.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/ml-results/dto/create-ml-result.dto.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/ml-results/ml-results.controller.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/ml-results/ml-results.controller.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/ml-results/ml-results.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/ml-results/ml-results.service.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/ml-results/ml-results.service.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/sensor-data/dto/create-sensor-data.dto.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/sensor-data/sensor-data.controller.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/sensor-data/sensor-data.controller.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/sensor-data/sensor-data.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/sensor-data/sensor-data.service.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/sensor-data/sensor-data.service.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/dto/create-user.dto.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/dto/update-user.dto.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/interface/user.interface.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/users.controller.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/users.controller.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/users.module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/users.service.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/users/users.service.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/test/app.e2e-spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/test/jest-e2e.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/tsconfig.build.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/tsconfig.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docker-compose.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/app/favicon.ico" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/app/globals.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/app/layout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/app/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/context/AuthContext.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/next.config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/postcss.config.mjs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/public/file.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/public/globe.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/public/next.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/public/vercel.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/public/window.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/tsconfig.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../posture_analyze/ml_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../posture_analyze/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/app.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/modules/monitoring.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/modules/sensorDataModel.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/modules/socketHandler.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/public/style.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/analyze.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/dashboard.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/index.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/login.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/login_fail.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/login_success.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/monitoring.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/signup.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../project-backup/views/signup_success.ejs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../tilt.ino" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,6 +173,23 @@
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
     </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="MTH" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
