@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+<!-- 기본적으로 모든 HTTP(클리어텍스트)를 허용 -->
+<base-config cleartextTrafficPermitted="true" />
+</network-security-config>
