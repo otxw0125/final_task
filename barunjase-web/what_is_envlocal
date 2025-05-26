@@ -1,7 +1,7 @@
 # Common environment variables (local development)
 NODE_ENV=development
 MONGODB_URI=mongodb+srv://admin:Dlghwns8391@sleepy.1jou6.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DB_NAME=ProjectDB
+MONGODB_DB_NAME=barunjase
 SESSION_SECRET=your_secret_key
 JWT_SECRET=Super$ecretKey123!
 JWT_EXPIRES_IN=3600s
