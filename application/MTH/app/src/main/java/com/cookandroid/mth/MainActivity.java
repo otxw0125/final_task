@@ -603,7 +603,7 @@ public class MainActivity extends AppCompatActivity {
                     "자세 경고 알림",
                     NotificationManager.IMPORTANCE_DEFAULT
             );
-            channel.setDescription("목 자세가 일정 시간 이상 불안정할 때 알림");
+            channel.setDescription("등받이 자세가 일정 시간 이상 불안정할 때 알림");
             channel.enableVibration(true);
             NotificationManager mgr = getSystemService(NotificationManager.class);
             mgr.createNotificationChannel(channel);
