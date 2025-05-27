@@ -2,12 +2,15 @@ import { Collection, InsertOneResult, InsertManyResult, ObjectId } from 'mongodb
 import type { NextApiRequest, NextApiResponse } from 'next';
 // 기존 DB 연결 로직 대신 lib의 모듈 사용
 import { connectToDatabase } from '../../lib/db/mongodb'; 
-import { getRawSensorDataCollection, getAngleDataCollection } from '../../lib/db/collections';
+import { getRawSensorDataCollection, getAngleDataCollection, getPostureScoreCollection } from '../../lib/db/collections';
 // 모델 정의 가져오기 (DB 저장용 스키마 위주로)
 import { RawSensorData, createRawSensorData } from '../../lib/models/RawSensorData'; 
 import { AngleData, createAngleData } from '../../lib/models/AngleData';
+import { PostureScore } from '../../lib/models/PostureScore';
 // 각도 변환 알고리즘 가져오기
 import { accelerationToAngle, AngleResult } from '../../lib/algorithms/angleConverter';
+// 자세 분석 알고리즘 가져오기
+import { analyzePostureFromAngles, createPostureScoreFromAnalysis } from '../../lib/algorithms/postureAnalyzer';
 
 // 요청 본문의 센서 데이터 (앱에서 직접 보내는 필드)
 interface SensorDataInputFromApp {
@@ -58,7 +61,19 @@ interface AngleProcessingResult {
     message: string; // 항상 메시지 제공 (성공/실패/오류)
 }
 
-// POST 성공 응답: RawSensorData 저장 결과 + AngleData 저장 결과 (선택적)
+// API 응답용 PostureScore (날짜는 string, _id도 string)
+interface PostureScoreForApiResponse extends Omit<PostureScore, '_id' | 'timestamp'> {
+    _id?: string;
+    timestamp: string;
+}
+
+interface PostureScoreProcessingResult {
+    insertedId?: string;
+    sample?: PostureScoreForApiResponse; // 성공 시에만 존재
+    message: string; // 항상 메시지 제공 (성공/실패/오류)
+}
+
+// POST 성공 응답: RawSensorData 저장 결과 + AngleData 저장 결과 + PostureScore 저장 결과 (선택적)
 interface ApiPostSuccessResponse {
   success: true;
   message: string;
@@ -67,7 +82,8 @@ interface ApiPostSuccessResponse {
     insertedIds: string[];
     sample: RawSensorDataForApiResponse;
   };
-  angleDataResult?: AngleProcessingResult;
+  angleDataResult?: AngleProcessingResult | AngleProcessingResult[];
+  postureScoreResult?: PostureScoreProcessingResult | PostureScoreProcessingResult[];
   timestamp: string;
 }
 
@@ -108,6 +124,15 @@ function convertAngleDocToApiResponse(doc: AngleData): AngleDataForApiResponse {
     };
 }
 
+// Helper to convert DB document to API response format (PostureScore)
+function convertPostureScoreDocToApiResponse(doc: PostureScore): PostureScoreForApiResponse {
+    return {
+        ...doc,
+        _id: doc._id?.toHexString(),
+        timestamp: doc.timestamp instanceof Date ? doc.timestamp.toISOString() : String(doc.timestamp),
+    };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SensorDataApiResponse>
@@ -126,6 +151,7 @@ export default async function handler(
     try {
       const rawSensorCollection = await getRawSensorDataCollection();
       const angleDataCollection = await getAngleDataCollection();
+      const postureScoreCollection = await getPostureScoreCollection();
 
       const requestDataArray: SensorDataInputFromApp[] = Array.isArray(req.body) ? req.body : [req.body];
       const now = new Date();
@@ -213,55 +239,192 @@ export default async function handler(
         sample: apiSampleRawDoc 
       };
 
-      let angleDataResponsePart: AngleProcessingResult | undefined;
-      if (isSingleInsert && requestDataArray.length > 0) {
-        const input = requestDataArray[0];
-        const sensorValuesForAngle = rawDocsToInsert[0].sensor_values;
+      let angleDataResponsePart: AngleProcessingResult | AngleProcessingResult[] | undefined;
+      let postureScoreResponsePart: PostureScoreProcessingResult | PostureScoreProcessingResult[] | undefined;
+      
+      // 단일 또는 배열 모두에 대해 각도 변환 및 자세 점수 생성 처리
+      if (requestDataArray.length > 0) {
+        if (isSingleInsert) {
+          // 단일 데이터 처리
+          const processedResult = await processSingleSensorData(
+            rawDocsToInsert[0], 
+            firstSavedRawDocInitial, 
+            angleDataCollection, 
+            postureScoreCollection, 
+            rawSensorCollection
+          );
+          angleDataResponsePart = processedResult.angleResult;
+          postureScoreResponsePart = processedResult.postureResult;
+          if (processedResult.flagUpdated) {
+            rawSensorDataResponsePart.sample.processedToAngle = true;
+          }
+        } else {
+          // 배열 데이터 처리
+          const angleResults: AngleProcessingResult[] = [];
+          const postureResults: PostureScoreProcessingResult[] = [];
+          let processedCount = 0;
+          
+          for (let i = 0; i < rawDocsToInsert.length; i++) {
+            const rawDoc = rawDocsToInsert[i];
+            const rawId = insertedRawIdsAsStrings[i];
+            
+            try {
+              const savedRawDoc = await rawSensorCollection.findOne({ _id: new ObjectId(rawId) });
+              if (!savedRawDoc) {
+                angleResults.push({ message: `원본 데이터 조회 실패 (ID: ${rawId})` });
+                postureResults.push({ message: `원본 데이터 조회 실패 (ID: ${rawId})` });
+                continue;
+              }
+              
+              const processedResult = await processSingleSensorData(
+                rawDoc, 
+                savedRawDoc, 
+                angleDataCollection, 
+                postureScoreCollection, 
+                rawSensorCollection
+              );
+              
+              angleResults.push(processedResult.angleResult);
+              postureResults.push(processedResult.postureResult);
+              if (processedResult.flagUpdated) {
+                processedCount++;
+              }
+            } catch (error: any) {
+              console.error(`배열 처리 중 오류 (인덱스 ${i}):`, error);
+              angleResults.push({ message: `처리 중 오류: ${error.message}` });
+              postureResults.push({ message: `처리 중 오류: ${error.message}` });
+            }
+          }
+          
+          angleDataResponsePart = angleResults;
+          postureScoreResponsePart = postureResults;
+          
+          console.log(`배열 처리 완료: ${processedCount}/${rawDocsToInsert.length}개 데이터 처리됨`);
+        }
+      }
+
+      // 단일 데이터 처리 함수
+      async function processSingleSensorData(
+        rawDoc: Omit<RawSensorData, '_id'>, 
+        savedRawDoc: RawSensorData, 
+        angleCollection: Collection<AngleData>, 
+        postureCollection: Collection<PostureScore>, 
+        rawCollection: Collection<RawSensorData>
+      ): Promise<{
+        angleResult: AngleProcessingResult;
+        postureResult: PostureScoreProcessingResult;
+        flagUpdated: boolean;
+      }> {
+        let angleResult: AngleProcessingResult;
+        let postureResult: PostureScoreProcessingResult;
+        let flagUpdated = false;
 
         try {
-          const angles: AngleResult = accelerationToAngle(sensorValuesForAngle.x_accel, sensorValuesForAngle.y_accel, sensorValuesForAngle.z_accel);
+          const angles: AngleResult = accelerationToAngle(
+            rawDoc.sensor_values.x_accel, 
+            rawDoc.sensor_values.y_accel, 
+            rawDoc.sensor_values.z_accel
+          );
+          
           const newAngleData = createAngleData(
-            firstSavedRawDocInitial.number!,
+            savedRawDoc.number!,
             angles.X, angles.Y, angles.Z,
             angles.X, angles.Y, angles.Z, 
             75, 
-            firstSavedRawDocInitial.timestamp instanceof Date ? firstSavedRawDocInitial.timestamp : new Date(firstSavedRawDocInitial.timestamp)
+            savedRawDoc.timestamp instanceof Date ? savedRawDoc.timestamp : new Date(savedRawDoc.timestamp)
           );
-          newAngleData.userId = firstSavedRawDocInitial.userId;
+          newAngleData.userId = savedRawDoc.userId;
 
-          const angleInsertResult = await angleDataCollection.insertOne(newAngleData as AngleData);
+          const angleInsertResult = await angleCollection.insertOne(newAngleData as AngleData);
           
           if (angleInsertResult.insertedId) {
-            const savedAngleDoc = await angleDataCollection.findOne({ _id: angleInsertResult.insertedId });
+            const savedAngleDoc = await angleCollection.findOne({ _id: angleInsertResult.insertedId });
             if (savedAngleDoc) {
-                angleDataResponsePart = {
-                    insertedId: angleInsertResult.insertedId.toHexString(),
-                    sample: convertAngleDocToApiResponse(savedAngleDoc),
-                    message: '각도 데이터 저장 성공'
-                };
-                await rawSensorCollection.updateOne(
-                    { _id: firstSavedRawDocInitial._id }, 
-                    { $set: { processedToAngle: true, updatedAt: new Date() } }
+              angleResult = {
+                insertedId: angleInsertResult.insertedId.toHexString(),
+                sample: convertAngleDocToApiResponse(savedAngleDoc),
+                message: '각도 데이터 저장 성공'
+              };
+              
+              // 자세 점수 생성 및 저장
+              try {
+                const postureAnalysis = analyzePostureFromAngles(angles);
+                const newPostureScore = createPostureScoreFromAnalysis(
+                  postureAnalysis,
+                  savedRawDoc.number!,
+                  savedRawDoc.timestamp instanceof Date ? savedRawDoc.timestamp : new Date(savedRawDoc.timestamp)
                 );
-                rawSensorDataResponsePart.sample.processedToAngle = true;
+
+                const postureInsertResult = await postureCollection.insertOne(newPostureScore as PostureScore);
+                
+                if (postureInsertResult.insertedId) {
+                  const savedPostureDoc = await postureCollection.findOne({ _id: postureInsertResult.insertedId });
+                  if (savedPostureDoc) {
+                    postureResult = {
+                      insertedId: postureInsertResult.insertedId.toHexString(),
+                      sample: convertPostureScoreDocToApiResponse(savedPostureDoc),
+                      message: '자세 점수 저장 성공'
+                    };
+                  } else {
+                    postureResult = { message: '자세 점수 저장 후 조회 실패' };
+                  }
+                } else {
+                  postureResult = { message: '자세 점수 저장 실패 (ID 없음)' };
+                }
+              } catch (postureError: any) {
+                console.error('자세 점수 생성 또는 저장 실패:', postureError);
+                postureResult = { message: `자세 점수 처리 중 오류: ${postureError.message}` };
+              }
+              
+              // 플래그 업데이트
+              await rawCollection.updateOne(
+                { _id: savedRawDoc._id }, 
+                { $set: { processedToAngle: true, updatedAt: new Date() } }
+              );
+              flagUpdated = true;
+              
             } else {
-                 angleDataResponsePart = { message: '각도 데이터 저장 후 조회 실패' };
+              angleResult = { message: '각도 데이터 저장 후 조회 실패' };
+              postureResult = { message: '각도 데이터 저장 실패로 인한 자세 점수 처리 불가' };
             }
           } else {
-            angleDataResponsePart = { message: '각도 데이터 저장 실패 (ID 없음)' };
+            angleResult = { message: '각도 데이터 저장 실패 (ID 없음)' };
+            postureResult = { message: '각도 데이터 저장 실패로 인한 자세 점수 처리 불가' };
           }
         } catch (angleError: any) {
           console.error('각도 변환 또는 저장 실패:', angleError);
-          angleDataResponsePart = { message: `각도 처리 중 오류: ${angleError.message}` };
+          angleResult = { message: `각도 처리 중 오류: ${angleError.message}` };
+          postureResult = { message: `각도 처리 실패로 인한 자세 점수 처리 불가: ${angleError.message}` };
+        }
+
+        return { angleResult, postureResult, flagUpdated };
+      }
+
+      // 메시지 생성 (단일/배열 구분)
+      let additionalMessage = '';
+      if (angleDataResponsePart) {
+        if (Array.isArray(angleDataResponsePart)) {
+          const successCount = angleDataResponsePart.filter(result => result.sample).length;
+          additionalMessage += ` 각도 데이터 ${successCount}/${angleDataResponsePart.length}개 처리 완료.`;
+        } else {
+          additionalMessage += ` ${angleDataResponsePart.message}`;
+        }
+      }
+      if (postureScoreResponsePart) {
+        if (Array.isArray(postureScoreResponsePart)) {
+          const successCount = postureScoreResponsePart.filter(result => result.sample).length;
+          additionalMessage += ` 자세 점수 ${successCount}/${postureScoreResponsePart.length}개 처리 완료.`;
+        } else {
+          additionalMessage += ` ${postureScoreResponsePart.message}`;
         }
       }
 
       res.status(201).json({
         success: true,
-        message: `원본 센서 데이터 ${rawSensorDataResponsePart.insertedCount}개 저장 완료.` + 
-                 (angleDataResponsePart ? ` ${angleDataResponsePart.message}` : ''),
+        message: `원본 센서 데이터 ${rawSensorDataResponsePart.insertedCount}개 저장 완료.${additionalMessage}`,
         rawSensorDataResult: rawSensorDataResponsePart,
         angleDataResult: angleDataResponsePart,
+        postureScoreResult: postureScoreResponsePart,
         timestamp: new Date().toISOString()
       });
 

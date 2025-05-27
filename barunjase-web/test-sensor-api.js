@@ -49,6 +49,16 @@ const testSensorAPI = async () => {
     } else if (result1.success && result1.angleDataResult?.message && !result1.angleDataResult?.sample) {
       console.warn('   ⚠️ 각도 데이터 처리 메시지:', result1.angleDataResult.message);
     }
+    
+    if (result1.success && result1.postureScoreResult?.sample) {
+      console.log('   저장된 자세 점수 샘플 (단일):', result1.postureScoreResult.sample);
+      if (result1.postureScoreResult.sample.number !== lastRawDataNumberForUser) {
+        console.warn('   ⚠️ 경고: 자세 점수의 number가 원본 데이터 number와 일치하지 않습니다.');
+      }
+      console.log(`   자세 점수: ${result1.postureScoreResult.sample.score}점, 피드백: ${result1.postureScoreResult.sample.feedback}`);
+    } else if (result1.success && result1.postureScoreResult?.message && !result1.postureScoreResult?.sample) {
+      console.warn('   ⚠️ 자세 점수 처리 메시지:', result1.postureScoreResult.message);
+    }
 
   } catch (error) {
     console.error('❌ 단일 데이터 전송 실패:', error);
@@ -56,8 +66,8 @@ const testSensorAPI = async () => {
 
   console.log('\n');
 
-  // 2. 배열 센서 데이터 전송 테스트 (각도 변환 미포함)
-  console.log('2️⃣ 배열 센서 데이터 POST 테스트 (각도 변환은 첫 항목에 대해 시도되지 않음 - 현재 로직)');
+  // 2. 배열 센서 데이터 전송 테스트 (각도 변환 및 자세 점수 생성 포함)
+  console.log('2️⃣ 배열 센서 데이터 POST 테스트 (각도 변환 및 자세 점수 생성 포함)');
   try {
     const arrayData = [
       {
@@ -90,9 +100,28 @@ const testSensorAPI = async () => {
     console.log('✅ 배열 데이터 전송 결과:', JSON.stringify(result2, null, 2));
     if (result2.success && result2.rawSensorDataResult?.sample) {
       console.log('   저장된 원본 데이터 첫번째 샘플 (배열):', result2.rawSensorDataResult.sample);
-      // 배열 전송 시 현재 로직은 각도 변환을 수행하지 않으므로 angleDataResult 확인 안 함
-      if (result2.angleDataResult && result2.angleDataResult.sample) {
-         console.warn('   ⚠️ 경고: 배열 전송 시 현재 로직에선 각도 데이터가 생성되지 않아야 합니다.', result2.angleDataResult);
+      
+      // 배열 전송 시 각도 변환 및 자세 점수 생성 확인
+      if (result2.angleDataResult && Array.isArray(result2.angleDataResult)) {
+        console.log(`   각도 데이터 처리 결과 (배열): ${result2.angleDataResult.length}개`);
+        result2.angleDataResult.forEach((angleResult, index) => {
+          if (angleResult.sample) {
+            console.log(`     [${index}] 각도 데이터 저장 성공: ${angleResult.sample.sensorDataNumber}`);
+          } else {
+            console.log(`     [${index}] 각도 데이터 처리 실패: ${angleResult.message}`);
+          }
+        });
+      }
+      
+      if (result2.postureScoreResult && Array.isArray(result2.postureScoreResult)) {
+        console.log(`   자세 점수 처리 결과 (배열): ${result2.postureScoreResult.length}개`);
+        result2.postureScoreResult.forEach((postureResult, index) => {
+          if (postureResult.sample) {
+            console.log(`     [${index}] 자세 점수 저장 성공: ${postureResult.sample.number}번, 점수: ${postureResult.sample.score}점`);
+          } else {
+            console.log(`     [${index}] 자세 점수 처리 실패: ${postureResult.message}`);
+          }
+        });
       }
     }
   } catch (error) {
