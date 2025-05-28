@@ -24,6 +24,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -78,16 +79,14 @@ public class MainActivity extends AppCompatActivity {
     private static final long BUFFER_DURATION_MS = 10_000; // 10초
     // ───────────────────────────────────────────────────────────────
     private long lastAlertTime = 0;
-    private List<Entry> chartEntries = new ArrayList<>();
-    private long chartStartTime = System.currentTimeMillis();
-    private int postureAlertCount = 0;
+
 
     private double baselineAccelerationMagnitude = -1.0;
     private float baselineX, baselineY, baselineZ;
     private long angleThresholdStartTime = 0;
     private boolean angleThresholdMet = false;
     private boolean alertNotificationShown = false;
-
+    private ImageView postureImageView;
     private enum State {IDLE, PENDING, ALERT}
 
     private State postureState = State.IDLE;
@@ -132,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        postureImageView = findViewById(R.id.postureImageView);
         statusTextView = findViewById(R.id.statusTextView);
         dataTextView = findViewById(R.id.dataTextView);
         baselineTextView = findViewById(R.id.baselineTextView);
@@ -147,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
         connectButton.setOnClickListener(v -> startBluetoothConnection());
         disconnectButton.setOnClickListener(v -> {
             cancelConnection();
+            postureImageView.setVisibility(View.INVISIBLE);
         });
 
         updateBluetoothStatus();
@@ -300,6 +300,34 @@ public class MainActivity extends AppCompatActivity {
                     belowThresholdTime = 0;
                 }
                 break;
+        }
+        if (postureImageView != null) { // 혹시 모를 null 체크
+            switch (postureState) {
+                case IDLE:
+                    // IDLE 상태일 때는 이미지를 숨기거나 올바른 자세 이미지 표시 (선택 사항)
+                    // 현재 로직에서는 IDLE 상태로 돌아오면 알림이 숨겨지므로 이미지도 숨기는 것이 자연스러움
+                    postureImageView.setVisibility(View.INVISIBLE);
+                    // 또는, 측정 시작 후 IDLE 상태는 올바른 자세를 의미한다면 O 이미지 표시
+                    // if (isMeasuring) { // 'isMeasuring' 변수가 있다면
+                    //     postureImageView.setVisibility(View.VISIBLE);
+                    //     postureImageView.setImageResource(R.drawable.ic_o);
+                    // } else {
+                    //     postureImageView.setVisibility(View.INVISIBLE);
+                    // }
+                    break;
+                case PENDING:
+                    // PENDING 상태에서는 아직 알림이 발생하지 않았으므로 올바른 자세 이미지 표시
+                    // 또는 아직 이미지를 표시하지 않고 ALERT 상태에서만 표시 (선택 사항)
+                    // 여기서는 PENDING 상태도 올바른 자세로 간주하고 O 이미지 표시
+                    postureImageView.setVisibility(View.VISIBLE);
+                    postureImageView.setImageResource(R.drawable.ic_o);
+                    break;
+                case ALERT:
+                    // ALERT 상태일 때는 잘못된 자세 이미지 표시
+                    postureImageView.setVisibility(View.VISIBLE);
+                    postureImageView.setImageResource(R.drawable.ic_x);
+                    break;
+            }
         }
     }
 
