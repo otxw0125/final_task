@@ -63,13 +63,13 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "BluetoothApp";
     private static final int REQUEST_PERMISSION_CODE = 101;
-    private static final int REQUEST_ENABLE_BT     = 102;
-    private static final UUID MY_UUID              = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-    private static final String HC06_DEVICE_NAME   = "HC-06";
-    private static final String WEB_SERVER_URL     = "http://192.168.71.251:3000/sensor-data";
-    private static final String CHANNEL_ID         = "posture_alert_channel";
-    private static final int    NOTIFICATION_ID    = 1;
-    private static final long   ANGLE_THRESHOLD_DURATION       = 5000; // 5초
+    private static final int REQUEST_ENABLE_BT = 102;
+    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private static final String HC06_DEVICE_NAME = "HC-06";
+    private static final String WEB_SERVER_URL = "http://192.168.71.251:3000/sensor-data";
+    private static final String CHANNEL_ID = "posture_alert_channel";
+    private static final int NOTIFICATION_ID = 1;
+    private static final long ANGLE_THRESHOLD_DURATION = 5000; // 5초
     private static final double ACCEL_MAGNITUDE_THRESHOLD_DELTA = 0.1;  // m/s²
 
     // ─── 버퍼링 관련 필드 ─────────────────────────────────────────
@@ -87,9 +87,11 @@ public class MainActivity extends AppCompatActivity {
     private long angleThresholdStartTime = 0;
     private boolean angleThresholdMet = false;
     private boolean alertNotificationShown = false;
-    private enum State { IDLE, PENDING, ALERT }
-    private State   postureState        = State.IDLE;
-    private long    belowThresholdTime  = 0;
+
+    private enum State {IDLE, PENDING, ALERT}
+
+    private State postureState = State.IDLE;
+    private long belowThresholdTime = 0;
 
     private BluetoothAdapter bluetoothAdapter;
     private ConnectThread connectThread;
@@ -100,14 +102,6 @@ public class MainActivity extends AppCompatActivity {
     private Button connectButton, disconnectButton;
     private OkHttpClient okHttpClient;
 
-    private Handler chartUpdateHandler = new Handler(Looper.getMainLooper());
-    private Runnable chartUpdater = new Runnable() {
-        @Override
-        public void run() {
-            updateChart(false);
-            chartUpdateHandler.postDelayed(this, 30_000);
-        }
-    };
 
     private Handler handler = new Handler(Looper.getMainLooper()) {
         @Override
@@ -139,13 +133,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        chart = findViewById(R.id.chart);
-        statusTextView   = findViewById(R.id.statusTextView);
-        dataTextView     = findViewById(R.id.dataTextView);
+        statusTextView = findViewById(R.id.statusTextView);
+        dataTextView = findViewById(R.id.dataTextView);
         baselineTextView = findViewById(R.id.baselineTextView);
-        connectButton    = findViewById(R.id.connectButton);
+        connectButton = findViewById(R.id.connectButton);
         disconnectButton = findViewById(R.id.disconnectButton);
-        okHttpClient     = new OkHttpClient();
+        okHttpClient = new OkHttpClient();
 
         createNotificationChannel();
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -154,10 +147,6 @@ public class MainActivity extends AppCompatActivity {
         connectButton.setOnClickListener(v -> startBluetoothConnection());
         disconnectButton.setOnClickListener(v -> {
             cancelConnection();
-            chartUpdateHandler.removeCallbacks(chartUpdater);
-            chartEntries.clear();
-            chart.clear();
-            chart.invalidate();
         });
 
         updateBluetoothStatus();
@@ -218,10 +207,13 @@ public class MainActivity extends AppCompatActivity {
                 .post(body)
                 .build();
         okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override public void onFailure(@NonNull Call call, @NonNull IOException e) {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 Log.e(TAG, "Buffered send failed", e);
             }
-            @Override public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (!response.isSuccessful()) {
                     Log.e(TAG, "Server error: " + response.code());
                 } else {
@@ -235,15 +227,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private static final double ENTER_THRESHOLD = 0.06;  // 기울임 감지 시작
-    private static final double EXIT_THRESHOLD  = 0.04;  // 정상 복귀 기준
-    private static final long   THRESHOLD_DURATION    = 5000;   // 5초
-    private static final long   RESET_DELAY         = 1000;  // 1초
+    private static final double EXIT_THRESHOLD = 0.04;  // 정상 복귀 기준
+    private static final long THRESHOLD_DURATION = 5000;   // 5초
+    private static final long RESET_DELAY = 1000;  // 1초
 
     // 수신된 가속도 값을 처리하는 메소드
     private void checkAndTriggerPostureAlert(float x, float y, float z) {
-        long now   = System.currentTimeMillis();
-        double curr= Math.sqrt(x*x + y*y + z*z);
-        double delta= Math.abs(curr - baselineAccelerationMagnitude);
+        long now = System.currentTimeMillis();
+        double curr = Math.sqrt(x * x + y * y + z * z);
+        double delta = Math.abs(curr - baselineAccelerationMagnitude);
         Log.d(TAG, String.format(
                 "DEBUG ▶ curr=%.3f, baseline=%.3f, delta=%.3f, threshold=%.3f",
                 curr,
@@ -253,14 +245,16 @@ public class MainActivity extends AppCompatActivity {
         ));
         if (baselineAccelerationMagnitude < 0
                 && (Math.abs(x) + Math.abs(y) + Math.abs(z)) > 1.0) {
-            baselineX = x; baselineY = y; baselineZ = z;
+            baselineX = x;
+            baselineY = y;
+            baselineZ = z;
             baselineAccelerationMagnitude = curr;
             baselineTextView.setText(
                     String.format("초기 값: X:%.2f, Y:%.2f, Z:%.2f",
                             baselineX, baselineY, baselineZ)
             );
-            postureState         = State.IDLE;  // 상태 초기화
-            belowThresholdTime   = 0;
+            postureState = State.IDLE;  // 상태 초기화
+            belowThresholdTime = 0;
             angleThresholdStartTime = 0;
             return;
 
@@ -269,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
         switch (postureState) {
             case IDLE:
                 if (delta > ENTER_THRESHOLD) {
-                    postureState       = State.PENDING;
+                    postureState = State.PENDING;
                     angleThresholdStartTime = now;
                     belowThresholdTime = 0;
                 }
@@ -299,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
                 if (delta < EXIT_THRESHOLD) {
                     // 즉시 정상 복귀로 간주
                     hidePostureAlertNotification();
-                    postureState            = State.IDLE;
+                    postureState = State.IDLE;
                     angleThresholdStartTime = 0;
                 } else {
                     // 다시 불안정해지면 타이머 리셋
@@ -361,7 +355,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String[] addPermission(String[] arr, String perm) {
-        String[] dst = new String[arr.length+1];
+        String[] dst = new String[arr.length + 1];
         System.arraycopy(arr, 0, dst, 0, arr.length);
         dst[arr.length] = perm;
         return dst;
@@ -374,7 +368,11 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, perms, results);
         if (requestCode == REQUEST_PERMISSION_CODE) {
             boolean all = true;
-            for (int r : results) if (r != PackageManager.PERMISSION_GRANTED) { all = false; break; }
+            for (int r : results)
+                if (r != PackageManager.PERMISSION_GRANTED) {
+                    all = false;
+                    break;
+                }
             if (all) {
                 Toast.makeText(this, "권한 허용됨", Toast.LENGTH_SHORT).show();
                 if (bluetoothAdapter != null && !bluetoothAdapter.isEnabled()) {
@@ -434,7 +432,8 @@ public class MainActivity extends AppCompatActivity {
         BluetoothDevice device = null;
         for (BluetoothDevice d : paired) {
             if (HC06_DEVICE_NAME.equals(d.getName())) {
-                device = d; break;
+                device = d;
+                break;
             }
         }
         if (device == null) {
@@ -451,8 +450,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void cancelConnection() {
-        if (connectThread != null) { connectThread.cancel(); connectThread = null; }
-        if (connectedThread != null) { connectedThread.cancel(); connectedThread = null; }
+        if (connectThread != null) {
+            connectThread.cancel();
+            connectThread = null;
+        }
+        if (connectedThread != null) {
+            connectedThread.cancel();
+            connectedThread = null;
+        }
         statusTextView.setText("연결 해제됨");
         dataTextView.setText("수신 데이터:");
         connectButton.setEnabled(true);
@@ -466,6 +471,7 @@ public class MainActivity extends AppCompatActivity {
 
     private class ConnectThread extends Thread {
         private final BluetoothSocket mmSocket;
+
         @SuppressLint("MissingPermission")
         ConnectThread(BluetoothDevice device) {
             BluetoothSocket tmp = null;
@@ -476,23 +482,21 @@ public class MainActivity extends AppCompatActivity {
             }
             mmSocket = tmp;
         }
+
         @SuppressLint("MissingPermission")
         public void run() {
             try {
                 mmSocket.connect();
                 handler.post(() -> {
-                    chartStartTime = System.currentTimeMillis();
-                    chartEntries.clear();
-                    chart.clear();
-                    updateChart(false);
-                    chart.setVisibility(View.VISIBLE);
-                    chartUpdateHandler.post(chartUpdater);
                     statusTextView.setText("연결됨");
                     disconnectButton.setEnabled(true);
                 });
             } catch (IOException e) {
                 Log.e(TAG, "연결 실패", e);
-                try { mmSocket.close(); } catch (IOException ignored) {}
+                try {
+                    mmSocket.close();
+                } catch (IOException ignored) {
+                }
                 handler.post(() -> {
                     statusTextView.setText("연결 실패");
                     connectButton.setEnabled(true);
@@ -501,9 +505,13 @@ public class MainActivity extends AppCompatActivity {
             }
             manageConnectedSocket(mmSocket);
         }
+
         void cancel() {
-            try { mmSocket.close(); }
-            catch (IOException e) { Log.e(TAG, "소켓 닫기 실패", e); }
+            try {
+                mmSocket.close();
+            } catch (IOException e) {
+                Log.e(TAG, "소켓 닫기 실패", e);
+            }
         }
     }
 
@@ -550,7 +558,7 @@ public class MainActivity extends AppCompatActivity {
                                 ).sendToTarget();
                                 int rem = readPos - (i + 1);
                                 System.arraycopy(
-                                        readBuffer, i+1, readBuffer, 0, rem
+                                        readBuffer, i + 1, readBuffer, 0, rem
                                 );
                                 readPos = rem;
                                 i = -1;
@@ -571,6 +579,7 @@ public class MainActivity extends AppCompatActivity {
             }
             cancel();
         }
+
         private void sendMessageToHandler(String message) {
             Message msg = handler.obtainMessage(MessageConstants.MESSAGE_TOAST);
             Bundle b = new Bundle();
@@ -578,10 +587,14 @@ public class MainActivity extends AppCompatActivity {
             msg.setData(b);
             handler.sendMessage(msg);
         }
+
         void cancel() {
             stop = true;
-            try { mmSocket.close(); }
-            catch (IOException e) { Log.e(TAG, "소켓 닫기 실패", e); }
+            try {
+                mmSocket.close();
+            } catch (IOException e) {
+                Log.e(TAG, "소켓 닫기 실패", e);
+            }
         }
     }
 
@@ -592,7 +605,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private interface MessageConstants {
-        int MESSAGE_READ  = 1;
+        int MESSAGE_READ = 1;
         int MESSAGE_TOAST = 2;
     }
 
@@ -627,68 +640,5 @@ public class MainActivity extends AppCompatActivity {
 
         NotificationManagerCompat.from(this)
                 .notify(NOTIFICATION_ID, b.build());
-        postureAlertCount++;
-        updateChart(true);
-    }
-
-    private void updateChart(boolean isAlert) {
-        long now = System.currentTimeMillis();
-        float seconds = (now - chartStartTime) / 1000f;
-        float rounded = ((int)(seconds / 30)) * 30;
-
-        boolean hasZero = false;
-        for (Entry e : chartEntries) if (e.getX() == 0f) { hasZero = true; break; }
-        if (!hasZero) chartEntries.add(new Entry(0f, 0f));
-
-        List<Float> times = new ArrayList<>();
-        for (Entry e : chartEntries) times.add(e.getX());
-        for (float t = 0; t <= rounded; t += 30f) {
-            if (!times.contains(t)) chartEntries.add(new Entry(t, 0f));
-        }
-
-        if (isAlert) {
-            for (Entry e : chartEntries) {
-                if (e.getX() == rounded) {
-                    e.setY(e.getY() + 1);
-                    break;
-                }
-            }
-        }
-
-        Collections.sort(chartEntries, new Comparator<Entry>() {
-            @Override
-            public int compare(Entry e1, Entry e2) {
-                return Float.compare(e1.getX(), e2.getX());
-            }
-        });
-        LineDataSet ds = new LineDataSet(chartEntries, "자세 알림 횟수");
-        ds.setDrawValues(false);
-        ds.setLineWidth(2f);
-        ds.setCircleRadius(4f);
-        ds.setDrawCircles(true);
-
-        chart.setData(new LineData(ds));
-
-        YAxis left = chart.getAxisLeft();
-        left.setAxisMinimum(0f);
-        left.setAxisMaximum(5f);
-        left.setGranularity(1f);
-        left.setLabelCount(6, true);
-        chart.getAxisRight().setEnabled(false);
-
-        XAxis xAxis = chart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setGranularity(30f);
-        xAxis.setLabelCount(5);
-        xAxis.setAxisMinimum(0f);
-        xAxis.setValueFormatter(new ValueFormatter() {
-            @Override public String getFormattedValue(float v) {
-                return String.format(Locale.getDefault(), "%.0f초", v);
-            }
-        });
-
-        chart.getDescription().setEnabled(false);
-        chart.notifyDataSetChanged();
-        chart.invalidate();
     }
 }
