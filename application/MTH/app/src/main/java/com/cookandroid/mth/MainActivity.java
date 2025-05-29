@@ -434,7 +434,7 @@ public class MainActivity extends AppCompatActivity {
         if (req == REQUEST_ENABLE_BT) {
             if (res == RESULT_OK) updateBluetoothStatus();
             else {
-                Toast.makeText(this, "블루투스 미활성화", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "블루투스 비활성화", Toast.LENGTH_SHORT).show();
                 statusTextView.setText("블루투스 꺼짐");
             }
         }
@@ -446,11 +446,11 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         if (bluetoothAdapter.isEnabled()) {
-            statusTextView.setText("블루투스 켜짐");
+            statusTextView.setText("아두이노 연결 준비 완료");
             connectButton.setEnabled(true);
             disconnectButton.setEnabled(false);
         } else {
-            statusTextView.setText("블루투스 꺼짐");
+            statusTextView.setText("블루투스 OFF");
             connectButton.setEnabled(false);
             disconnectButton.setEnabled(false);
         }
