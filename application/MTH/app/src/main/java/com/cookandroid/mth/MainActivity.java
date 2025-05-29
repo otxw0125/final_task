@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int NOTIFICATION_ID = 1;
     private static final long ANGLE_THRESHOLD_DURATION = 5000; // 5초
     private static final double ACCEL_MAGNITUDE_THRESHOLD_DELTA = 0.1;  // m/s²
-
+    private boolean isMeasuring = false;
     // ─── 버퍼링 관련 필드 ─────────────────────────────────────────
     private final List<JSONObject> sendBuffer = new ArrayList<>();
     private long bufferStartTime = -1;
@@ -144,8 +144,10 @@ public class MainActivity extends AppCompatActivity {
         checkAndRequestPermissions();
 
         connectButton.setOnClickListener(v -> startBluetoothConnection());
+        isMeasuring = true;
         disconnectButton.setOnClickListener(v -> {
             cancelConnection();
+            isMeasuring = false;
             postureImageView.setVisibility(View.INVISIBLE);
         });
 
@@ -304,28 +306,36 @@ public class MainActivity extends AppCompatActivity {
         if (postureImageView != null) { // 혹시 모를 null 체크
             switch (postureState) {
                 case IDLE:
-                    // IDLE 상태일 때는 이미지를 숨기거나 올바른 자세 이미지 표시 (선택 사항)
-                    // 현재 로직에서는 IDLE 상태로 돌아오면 알림이 숨겨지므로 이미지도 숨기는 것이 자연스러움
-                    postureImageView.setVisibility(View.INVISIBLE);
-                    // 또는, 측정 시작 후 IDLE 상태는 올바른 자세를 의미한다면 O 이미지 표시
-                    // if (isMeasuring) { // 'isMeasuring' 변수가 있다면
-                    //     postureImageView.setVisibility(View.VISIBLE);
-                    //     postureImageView.setImageResource(R.drawable.ic_o);
-                    // } else {
-                    //     postureImageView.setVisibility(View.INVISIBLE);
-                    // }
+                    // IDLE 상태일 때는 올바른 자세 이미지 표시 (알림 발생 안함)
+                    // 단, 측정 시작 전에는 숨김 처리가 필요할 수 있습니다.
+                    // 'isMeasuring' 변수를 사용한다고 가정
+                    if (isMeasuring) {
+                        postureImageView.setVisibility(View.VISIBLE);
+                        postureImageView.setImageResource(R.drawable.ic_o); // 올바른 자세 이미지
+                    } else {
+                        // 측정 시작 전에는 숨김
+                        postureImageView.setVisibility(View.INVISIBLE);
+                    }
                     break;
                 case PENDING:
-                    // PENDING 상태에서는 아직 알림이 발생하지 않았으므로 올바른 자세 이미지 표시
-                    // 또는 아직 이미지를 표시하지 않고 ALERT 상태에서만 표시 (선택 사항)
-                    // 여기서는 PENDING 상태도 올바른 자세로 간주하고 O 이미지 표시
-                    postureImageView.setVisibility(View.VISIBLE);
-                    postureImageView.setImageResource(R.drawable.ic_o);
+                    // PENDING 상태일 때도 올바른 자세 이미지 표시 (아직 알림 발생 안함)
+                    if (isMeasuring) { // 측정 중일 때만 표시
+                        postureImageView.setVisibility(View.VISIBLE);
+                        postureImageView.setImageResource(R.drawable.ic_o); // 올바른 자세 이미지
+                    } else {
+                        // 측정 시작 전에는 숨김
+                        postureImageView.setVisibility(View.INVISIBLE);
+                    }
                     break;
                 case ALERT:
-                    // ALERT 상태일 때는 잘못된 자세 이미지 표시
-                    postureImageView.setVisibility(View.VISIBLE);
-                    postureImageView.setImageResource(R.drawable.ic_x);
+                    // ALERT 상태일 때만 잘못된 자세 이미지 표시 (알림 발생)
+                    if (isMeasuring) { // 측정 중일 때만 표시
+                        postureImageView.setVisibility(View.VISIBLE);
+                        postureImageView.setImageResource(R.drawable.ic_x); // 잘못된 자세 이미지
+                    } else {
+                        // 측정 시작 전에는 숨김
+                        postureImageView.setVisibility(View.INVISIBLE);
+                    }
                     break;
             }
         }
@@ -564,7 +574,7 @@ public class MainActivity extends AppCompatActivity {
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
             handler.post(() -> {
-                statusTextView.setText("통신 시작");
+                statusTextView.setText("블루투스 연결 성공!");
                 disconnectButton.setEnabled(true);
             });
         }
