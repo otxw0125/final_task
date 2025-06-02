@@ -10,10 +10,12 @@ for ($i = 0; $i -lt $Count; $i++) {
     $currentNumber = $StartNumber + $i
     $timestamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
     
-    # Simulate some variation in accelerometer data
-    $accelX = (Get-Random -Minimum -1.0 -Maximum 1.0).ToString("F2")
-    $accelY = (Get-Random -Minimum -1.0 -Maximum 1.0).ToString("F2")
-    $accelZ = (Get-Random -Minimum 9.0 -Maximum 9.9).ToString("F2") # Mostly around 9.8, 최대값 수정
+    # Simulate more realistic accelerometer data with posture variations
+    # X, Y: posture changes from baseline position
+    $accelX = (Get-Random -Minimum -3.0 -Maximum 3.0).ToString("F2")
+    $accelY = (Get-Random -Minimum -3.0 -Maximum 3.0).ToString("F2")
+    # Z: more realistic gravity component variations (8.5 to 10.5 m/s²)
+    $accelZ = (Get-Random -Minimum 8.5 -Maximum 10.5).ToString("F2")
 
     $body = @{
         number    = $currentNumber
