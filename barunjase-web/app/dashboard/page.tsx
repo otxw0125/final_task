@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getCurrentPostureFeedbackForServer, getPostureHistoryForServer } from '../../lib/data/feedback';
 import CurrentPostureFeedbackCard from '../../components/dashboard/CurrentPostureFeedbackCard';
 import PostureHistoryVisualization from '../../components/dashboard/PostureHistoryVisualization';
+import ProcessRawDataButton from '../../components/dashboard/ProcessRawDataButton';
 // import { AngleChartCardWrapper, PostureStatusCardWrapper } from './DashboardWrappers'; // 주석 처리
 
 // 동적 메타데이터 생성
@@ -60,6 +61,11 @@ async function DashboardData() {
     <>
       {/* 현재 자세 피드백 (초기 데이터는 서버에서, 이후 업데이트는 클라이언트에서 SWR로) */} 
       <CurrentPostureFeedbackCard initialData={initialCurrentFeedback} />
+
+      {/* 센서 데이터 처리 버튼 */}
+      <div className="mt-6">
+        <ProcessRawDataButton />
+      </div>
 
       {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"> */}
       {/*   <AngleChartCardWrapper /> */}

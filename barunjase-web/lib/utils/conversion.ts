@@ -19,7 +19,19 @@ const BASE_PITCH = 68.97; // degrees (기본 Pitch 각도)
  * @returns x, y 변화량과 z=0을 포함하는 객체 (AnglesValues 타입)
  */
 export function convertAccelToAngles(accelValues: RawSensorValues): AnglesValues {
+  // 입력 검증
+  if (!accelValues) {
+    console.error("[convertAccelToAngles] accelValues is null or undefined");
+    return { x: 0, y: 0, z: 0 };
+  }
+
   const { x_accel, y_accel, z_accel } = accelValues;
+
+  // 개별 값 검증
+  if (typeof x_accel !== 'number' || typeof y_accel !== 'number' || typeof z_accel !== 'number') {
+    console.error("[convertAccelToAngles] Invalid acceleration values:", { x_accel, y_accel, z_accel });
+    return { x: 0, y: 0, z: 0 };
+  }
 
   if (x_accel === 0 && y_accel === 0 && z_accel === 0) {
     console.warn("[convertAccelToAngles] All accelerometer values are zero. Returning zero angles.");

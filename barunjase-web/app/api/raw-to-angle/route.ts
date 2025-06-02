@@ -30,10 +30,14 @@ export async function POST(request: NextRequest) {
     } else if (body.rawSensorDataNumber !== undefined) {
       rawData = await rawSensorCollection.findOne({ number: body.rawSensorDataNumber });
     } else if (body.processOldestUnprocessed) {
+      console.log('[DEBUG] Finding oldest unprocessed data...');
+      const query = { $or: [{ processedToAngle: false }, { processedToAngle: { $exists: false } }] };
+      console.log('[DEBUG] Query:', JSON.stringify(query));
       rawData = await rawSensorCollection.findOne(
-        { $or: [{ processedToAngle: false }, { processedToAngle: { $exists: false } }] },
+        query,
         { sort: { timestamp: 1 } } // 가장 오래된 것부터
       );
+      console.log('[DEBUG] Found oldest unprocessed data:', rawData ? `ID: ${rawData._id}, Number: ${rawData.number}` : 'None');
     } else {
       return NextResponse.json({ message: "Please provide rawSensorDataNumber, rawSensorDataId, or set processOldestUnprocessed to true" }, { status: 400 });
     }
@@ -44,6 +48,63 @@ export async function POST(request: NextRequest) {
 
     if (rawData.processedToAngle === true) {
       return NextResponse.json({ message: `Raw sensor data (ID: ${rawData._id}, Number: ${rawData.number}) has already been processed.`, existingAngleData: null }, { status: 200 });
+    }
+
+    // 디버깅: 센서 데이터 구조 확인
+    console.log('Raw sensor data:', JSON.stringify(rawData, null, 2));
+    console.log('Sensor values:', JSON.stringify(rawData.sensor_values, null, 2));
+
+    // 센서 데이터 유효성 검사
+    if (!rawData.sensor_values) {
+      console.error('[ERROR] sensor_values field is missing or null:', rawData);
+      return NextResponse.json({ 
+        message: "Sensor values not found in raw data", 
+        rawDataId: rawData._id,
+        rawDataNumber: rawData.number,
+        availableFields: Object.keys(rawData || {}),
+        debug: "sensor_values field is missing or null"
+      }, { status: 400 });
+    }
+
+    if (typeof rawData.sensor_values !== 'object') {
+      console.error('[ERROR] sensor_values is not an object:', typeof rawData.sensor_values, rawData.sensor_values);
+      return NextResponse.json({ 
+        message: "Sensor values is not a valid object", 
+        rawDataId: rawData._id,
+        rawDataNumber: rawData.number,
+        sensorValuesType: typeof rawData.sensor_values,
+        debug: "sensor_values field exists but is not an object"
+      }, { status: 400 });
+    }
+
+    const { x_accel, y_accel, z_accel } = rawData.sensor_values;
+    if (x_accel === undefined || y_accel === undefined || z_accel === undefined) {
+      console.error('[ERROR] Missing acceleration values:', { x_accel, y_accel, z_accel });
+      return NextResponse.json({ 
+        message: "Missing acceleration values", 
+        availableValues: Object.keys(rawData.sensor_values || {}),
+        rawDataId: rawData._id,
+        rawDataNumber: rawData.number,
+        missingFields: {
+          x_accel: x_accel === undefined,
+          y_accel: y_accel === undefined,
+          z_accel: z_accel === undefined
+        }
+      }, { status: 400 });
+    }
+
+    if (typeof x_accel !== 'number' || typeof y_accel !== 'number' || typeof z_accel !== 'number') {
+      console.error('[ERROR] Acceleration values are not numbers:', { x_accel: typeof x_accel, y_accel: typeof y_accel, z_accel: typeof z_accel });
+      return NextResponse.json({ 
+        message: "Acceleration values must be numbers", 
+        rawDataId: rawData._id,
+        rawDataNumber: rawData.number,
+        valueTypes: {
+          x_accel: typeof x_accel,
+          y_accel: typeof y_accel,
+          z_accel: typeof z_accel
+        }
+      }, { status: 400 });
     }
 
     // 각도 변환

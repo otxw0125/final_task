@@ -1,8 +1,11 @@
 //file app/api/sensor-data/raw/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getRawSensorDataCollection } from '../../../../lib/db/collections';
+import { getRawSensorDataCollection, getAngleDataCollection } from '../../../../lib/db/collections';
 import { createRawSensorData, RawSensorData, RawSensorValues } from '../../../../lib/models/RawSensorData';
 import { getAccelerationMagnitude } from '../../../../lib/algorithms/angleConverter';
+import { convertAccelToAngles } from '../../../../lib/utils/conversion';
+import { generatePostureFeedbackFromAngleData } from '../../../../lib/utils/postureEvaluator';
+import { AngleData } from '../../../../lib/models/AngleData';
 
 /**
  * 센서 데이터 수집 API 엔드포인트
@@ -89,15 +92,54 @@ export async function POST(request: NextRequest) {
           
           if (updateResult.modifiedCount > 0) {
             console.log('Data updated successfully');
+            
+            // 각도 변환
+            const calculatedAngles = convertAccelToAngles(sensorValuesInput);
+            
+            // 자세 피드백 생성
+            const feedbackInput = {
+              angles: calculatedAngles,
+              timestamp: rawSensorData.timestamp
+            };
+            const postureFeedback = generatePostureFeedbackFromAngleData(feedbackInput);
+            
+            // AngleData 생성 및 저장
+            try {
+              const angleDataCollection = await getAngleDataCollection();
+              const newAngleEntry: Omit<AngleData, '_id'> = {
+                sensorDataNumber: rawSensorData.number,
+                userId: rawSensorData.userId,
+                angles: calculatedAngles,
+                timestamp: new Date(rawSensorData.timestamp),
+                overallScore: postureFeedback.overallScore,
+                riskLevel: postureFeedback.riskLevel || 'unknown',
+                summaryMessage: postureFeedback.summaryMessage,
+                detailedAdvice: postureFeedback.detailedAdvice,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+              
+              await angleDataCollection.insertOne(newAngleEntry);
+              console.log('AngleData created and saved successfully');
+            } catch (angleError) {
+              console.error('Error saving AngleData:', angleError);
+            }
+            
             return NextResponse.json(
               { 
                 success: true, 
-                message: 'Sensor data updated successfully',
+                message: 'Sensor data updated and processed successfully',
                 data: { 
                   number: rawSensorData.number,
                   updated: true,
                   magnitude: Number(magnitude.toFixed(3)),
-                  isValidMagnitude 
+                  isValidMagnitude,
+                  x_angle: calculatedAngles.x,
+                  y_angle: calculatedAngles.y,
+                  z_angle: calculatedAngles.z,
+                  overallScore: postureFeedback.overallScore,
+                  riskLevel: postureFeedback.riskLevel,
+                  summaryMessage: postureFeedback.summaryMessage
                 }
               },
               { status: 200 }
@@ -114,16 +156,54 @@ export async function POST(request: NextRequest) {
           const insertResult = await collection.insertOne(rawSensorData);
           console.log('Data inserted successfully:', insertResult.insertedId);
           
+          // 각도 변환
+          const calculatedAngles = convertAccelToAngles(sensorValuesInput);
+          
+          // 자세 피드백 생성
+          const feedbackInput = {
+            angles: calculatedAngles,
+            timestamp: rawSensorData.timestamp
+          };
+          const postureFeedback = generatePostureFeedbackFromAngleData(feedbackInput);
+          
+          // AngleData 생성 및 저장
+          try {
+            const angleDataCollection = await getAngleDataCollection();
+            const newAngleEntry: Omit<AngleData, '_id'> = {
+              sensorDataNumber: rawSensorData.number,
+              userId: rawSensorData.userId,
+              angles: calculatedAngles,
+              timestamp: new Date(rawSensorData.timestamp),
+              overallScore: postureFeedback.overallScore,
+              riskLevel: postureFeedback.riskLevel || 'unknown',
+              summaryMessage: postureFeedback.summaryMessage,
+              detailedAdvice: postureFeedback.detailedAdvice,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            
+            await angleDataCollection.insertOne(newAngleEntry);
+            console.log('AngleData created and saved successfully');
+          } catch (angleError) {
+            console.error('Error saving AngleData:', angleError);
+          }
+          
           // 저장 성공 응답
           return NextResponse.json(
             { 
               success: true, 
-              message: 'Sensor data saved successfully',
+              message: 'Sensor data saved and processed successfully',
               data: { 
                 id: insertResult.insertedId,
                 number: rawSensorData.number,
                 magnitude: Number(magnitude.toFixed(3)),
-                isValidMagnitude 
+                isValidMagnitude,
+                x_angle: calculatedAngles.x,
+                y_angle: calculatedAngles.y,
+                z_angle: calculatedAngles.z,
+                overallScore: postureFeedback.overallScore,
+                riskLevel: postureFeedback.riskLevel,
+                summaryMessage: postureFeedback.summaryMessage
               }
             },
             { status: 201 }
