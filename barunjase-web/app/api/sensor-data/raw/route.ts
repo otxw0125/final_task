@@ -51,20 +51,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+        // 소수점 2자리로 반올림
+    const roundedX = Math.round(body.accel.x * 100) / 100;
+    const roundedY = Math.round(body.accel.y * 100) / 100;
+    const roundedZ = Math.round(body.accel.z * 100) / 100;
     // 가속도 센서 데이터 무결성 검사
     try {
-      const magnitude = getAccelerationMagnitude(body.accel.x, body.accel.y, body.accel.z);
+      const magnitude = getAccelerationMagnitude(roundedX, roundedY, roundedZ);
       const isValidMagnitude = magnitude >= 0.5 && magnitude <= 2.0; // 정상 범위: 0.5g ~ 2.0g
       
       if (!isValidMagnitude) {
         console.warn(`Unusual acceleration magnitude detected: ${magnitude.toFixed(3)}g for data #${body.number}`);
       }
 
-      // 센서 데이터 객체 생성
+      // 센서 데이터 객체 생성 (반올림된 값 사용)
       const sensorValuesInput: RawSensorValues = {
-        x_accel: body.accel.x,
-        y_accel: body.accel.y,
-        z_accel: body.accel.z,
+        x_accel: roundedX,
+        y_accel: roundedY,
+        z_accel: roundedZ,
       };
       const rawSensorData = createRawSensorData(
         sensorValuesInput,
