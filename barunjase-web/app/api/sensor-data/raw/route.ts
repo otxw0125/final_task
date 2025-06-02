@@ -2,10 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRawSensorDataCollection, getAngleDataCollection } from '../../../../lib/db/collections';
 import { createRawSensorData, RawSensorData, RawSensorValues } from '../../../../lib/models/RawSensorData';
+import { createAngleData, AngleData } from '../../../../lib/models/AngleData';
 import { getAccelerationMagnitude } from '../../../../lib/algorithms/angleConverter';
 import { convertAccelToAngles } from '../../../../lib/utils/conversion';
-import { generatePostureFeedbackFromAngleData } from '../../../../lib/utils/postureEvaluator';
-import { AngleData } from '../../../../lib/models/AngleData';
 
 /**
  * 센서 데이터 수집 API 엔드포인트
@@ -20,16 +19,16 @@ import { AngleData } from '../../../../lib/models/AngleData';
  * 클라이언트(센서 또는 모바일 앱)에서 전송하는 가속도 센서 데이터를 받아
  * 검증 후 데이터베이스에 저장합니다.
  * 
- * 요청 본문 예시:
- * {
- *   "number": 1001,
- *   "accel": {
- *     "x": 0.1,
- *     "y": 0.5, 
- *     "z": 0.9
+ * 요청 본문 예시 (배열 형식):
+ * [
+ *   {
+ *     "x_accel": 0.12,
+ *     "y_accel": 0.53, 
+ *     "z_accel": 0.91,
+ *     "timestamp": 1748850002839
  *   },
- *   "timestamp": "2023-01-01T12:00:00Z" // 선택적
- * }
+ *   ...
+ * ]
  */
 export async function POST(request: NextRequest) {
   try {
@@ -37,189 +36,245 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Received sensor data:', JSON.stringify(body));
     
-    // 필수 필드 검증
-    const validationResult = validateSensorData(body);
-    if (!validationResult.isValid) {
-      console.error('Sensor data validation error:', validationResult.message);
+    // 배열인지 확인
+    if (!Array.isArray(body)) {
+      console.error('Sensor data must be an array');
       return NextResponse.json(
         { 
           error: 'Invalid data format', 
-          message: validationResult.message,
-          required: 'number (integer), accel.x (number), accel.y (number), accel.z (number)'
+          message: 'Data must be an array of sensor readings',
+          required: 'Array with elements containing x_accel, y_accel, z_accel (numbers), timestamp (number)'
         },
         { status: 400 }
       );
     }
 
-        // 소수점 2자리로 반올림
-    const roundedX = Math.round(body.accel.x * 100) / 100;
-    const roundedY = Math.round(body.accel.y * 100) / 100;
-    const roundedZ = Math.round(body.accel.z * 100) / 100;
-    // 가속도 센서 데이터 무결성 검사
-    try {
-      const magnitude = getAccelerationMagnitude(roundedX, roundedY, roundedZ);
-      const isValidMagnitude = magnitude >= 0.5 && magnitude <= 2.0; // 정상 범위: 0.5g ~ 2.0g
-      
-      if (!isValidMagnitude) {
-        console.warn(`Unusual acceleration magnitude detected: ${magnitude.toFixed(3)}g for data #${body.number}`);
-      }
-
-      // 센서 데이터 객체 생성 (반올림된 값 사용)
-      const sensorValuesInput: RawSensorValues = {
-        x_accel: roundedX,
-        y_accel: roundedY,
-        z_accel: roundedZ,
-      };
-      const rawSensorData = createRawSensorData(
-        sensorValuesInput,
-        body.number,
-        undefined,
-        body.timestamp ? new Date(body.timestamp) : new Date()
+    if (body.length === 0) {
+      return NextResponse.json(
+        { error: 'Empty data array' },
+        { status: 400 }
       );
-      console.log('Creating raw sensor data:', JSON.stringify(rawSensorData));
+    }
 
+    const results = [];
+    const errors = [];
+
+    // 각 센서 데이터 항목을 순서대로 처리
+    for (let i = 0; i < body.length; i++) {
+      const sensorItem = body[i];
+      
       try {
-        // 데이터베이스에 저장
-        const collection = await getRawSensorDataCollection();
-        console.log('Connected to database collection');
+        // 개별 센서 데이터 검증
+        const validationResult = validateSensorArrayItem(sensorItem, i);
+        if (!validationResult.isValid) {
+          console.error(`Sensor data validation error at index ${i}:`, validationResult.message);
+          errors.push({
+            index: i,
+            error: validationResult.message
+          });
+          continue;
+        }
+
+        // 소수점 2자리로 반올림
+        const roundedX = Math.round(sensorItem.x_accel * 100) / 100;
+        const roundedY = Math.round(sensorItem.y_accel * 100) / 100;
+        const roundedZ = Math.round(sensorItem.z_accel * 100) / 100;
+
+        // 가속도 센서 데이터 무결성 검사
+        const magnitude = getAccelerationMagnitude(roundedX, roundedY, roundedZ);
+        const isValidMagnitude = magnitude >= 0.5 && magnitude <= 20.0; // 정상 범위: 0.5g ~ 20.0g (센서 데이터 고려)
         
-        // 중복 데이터 확인
-        const existingData = await collection.findOne({ number: body.number });
+        if (!isValidMagnitude) {
+          console.warn(`Unusual acceleration magnitude detected: ${magnitude.toFixed(3)}g for data at index ${i}`);
+        }
+
+        // 센서 데이터 객체 생성
+        const sensorValuesInput: RawSensorValues = {
+          x_accel: roundedX,
+          y_accel: roundedY,
+          z_accel: roundedZ,
+        };
+
+        // timestamp를 number로 생성 (배열의 인덱스를 기반으로 고유한 number 생성)
+        const dataNumber = sensorItem.timestamp || Date.now() + i;
         
-        if (existingData) {
-          // 기존 데이터 업데이트
-          console.log('Duplicate key detected, updating existing data');
-          const updateResult = await collection.replaceOne(
-            { number: body.number },
-            rawSensorData
-          );
+        const rawSensorData = createRawSensorData(
+          sensorValuesInput,
+          dataNumber,
+          undefined,
+          new Date(sensorItem.timestamp || Date.now())
+        );
+
+        console.log(`Creating raw sensor data for index ${i}:`, JSON.stringify(rawSensorData));
+
+        try {
+          // 데이터베이스에 저장
+          const collection = await getRawSensorDataCollection();
           
-          if (updateResult.modifiedCount > 0) {
-            console.log('Data updated successfully');
-            
-            // 각도 변환
-            const calculatedAngles = convertAccelToAngles(sensorValuesInput);
-            
-            // 자세 피드백 생성
-            const feedbackInput = {
-              angles: calculatedAngles,
-              timestamp: rawSensorData.timestamp
-            };
-            const postureFeedback = generatePostureFeedbackFromAngleData(feedbackInput);
-            
-            // AngleData 생성 및 저장
-            try {
-              const angleDataCollection = await getAngleDataCollection();
-              const newAngleEntry: Omit<AngleData, '_id'> = {
-                sensorDataNumber: rawSensorData.number,
-                userId: rawSensorData.userId,
-                angles: calculatedAngles,
-                timestamp: new Date(rawSensorData.timestamp),
-                overallScore: postureFeedback.overallScore,
-                riskLevel: postureFeedback.riskLevel || 'unknown',
-                summaryMessage: postureFeedback.summaryMessage,
-                detailedAdvice: postureFeedback.detailedAdvice,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              };
-              
-              await angleDataCollection.insertOne(newAngleEntry);
-              console.log('AngleData created and saved successfully');
-            } catch (angleError) {
-              console.error('Error saving AngleData:', angleError);
-            }
-            
-            return NextResponse.json(
-              { 
-                success: true, 
-                message: 'Sensor data updated and processed successfully',
-                data: { 
-                  number: rawSensorData.number,
-                  updated: true,
-                  magnitude: Number(magnitude.toFixed(3)),
-                  isValidMagnitude,
-                  x_angle: calculatedAngles.x,
-                  y_angle: calculatedAngles.y,
-                  z_angle: calculatedAngles.z,
-                  overallScore: postureFeedback.overallScore,
-                  riskLevel: postureFeedback.riskLevel,
-                  summaryMessage: postureFeedback.summaryMessage
-                }
-              },
-              { status: 200 }
+          // 중복 데이터 확인 (timestamp 기반)
+          const existingData = await collection.findOne({ number: dataNumber });
+          
+          let sensorDataSaved = false;
+          
+          if (existingData) {
+            // 기존 데이터 업데이트
+            console.log(`Duplicate key detected for index ${i}, updating existing data`);
+            const updateResult = await collection.replaceOne(
+              { number: dataNumber },
+              rawSensorData
             );
-          } else {
-            console.error('Update failed for duplicate key:', body.number);
-            return NextResponse.json(
-              { error: `Data with number ${body.number} already exists and could not be updated` },
-              { status: 409 }
-            );
-          }
-        } else {
-          // 새 데이터 삽입
-          const insertResult = await collection.insertOne(rawSensorData);
-          console.log('Data inserted successfully:', insertResult.insertedId);
-          
-          // 각도 변환
-          const calculatedAngles = convertAccelToAngles(sensorValuesInput);
-          
-          // 자세 피드백 생성
-          const feedbackInput = {
-            angles: calculatedAngles,
-            timestamp: rawSensorData.timestamp
-          };
-          const postureFeedback = generatePostureFeedbackFromAngleData(feedbackInput);
-          
-          // AngleData 생성 및 저장
-          try {
-            const angleDataCollection = await getAngleDataCollection();
-            const newAngleEntry: Omit<AngleData, '_id'> = {
-              sensorDataNumber: rawSensorData.number,
-              userId: rawSensorData.userId,
-              angles: calculatedAngles,
-              timestamp: new Date(rawSensorData.timestamp),
-              overallScore: postureFeedback.overallScore,
-              riskLevel: postureFeedback.riskLevel || 'unknown',
-              summaryMessage: postureFeedback.summaryMessage,
-              detailedAdvice: postureFeedback.detailedAdvice,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
             
-            await angleDataCollection.insertOne(newAngleEntry);
-            console.log('AngleData created and saved successfully');
-          } catch (angleError) {
-            console.error('Error saving AngleData:', angleError);
-          }
-          
-          // 저장 성공 응답
-          return NextResponse.json(
-            { 
-              success: true, 
-              message: 'Sensor data saved and processed successfully',
-              data: { 
-                id: insertResult.insertedId,
+            if (updateResult.modifiedCount > 0) {
+              sensorDataSaved = true;
+              results.push({
+                index: i,
+                success: true,
+                action: 'updated',
                 number: rawSensorData.number,
                 magnitude: Number(magnitude.toFixed(3)),
                 isValidMagnitude,
-                x_angle: calculatedAngles.x,
-                y_angle: calculatedAngles.y,
-                z_angle: calculatedAngles.z,
-                overallScore: postureFeedback.overallScore,
-                riskLevel: postureFeedback.riskLevel,
-                summaryMessage: postureFeedback.summaryMessage
+                data: {
+                  x_accel: roundedX,
+                  y_accel: roundedY,
+                  z_accel: roundedZ
+                }
+              });
+            } else {
+              errors.push({
+                index: i,
+                error: `Data with number ${dataNumber} already exists and could not be updated`
+              });
+            }
+          } else {
+            // 새 데이터 삽입
+            const insertResult = await collection.insertOne(rawSensorData);
+            console.log(`Data inserted successfully for index ${i}:`, insertResult.insertedId);
+            
+            sensorDataSaved = true;
+            results.push({
+              index: i,
+              success: true,
+              action: 'inserted',
+              id: insertResult.insertedId,
+              number: rawSensorData.number,
+              magnitude: Number(magnitude.toFixed(3)),
+              isValidMagnitude,
+              data: {
+                x_accel: roundedX,
+                y_accel: roundedY,
+                z_accel: roundedZ
               }
-            },
-            { status: 201 }
-          );
+            });
+          }
+
+          // 센서 데이터가 성공적으로 저장된 경우에만 각도 변환 수행
+          if (sensorDataSaved) {
+            try {
+              const angleValues = convertAccelToAngles(sensorValuesInput);
+              const createdAngleData = createAngleData(
+                dataNumber, // sensorDataNumber
+                angleValues.x, // xAngle
+                angleValues.y, // yAngle  
+                angleValues.z, // zAngle
+                0, // xFiltered (기본값)
+                0, // yFiltered (기본값)
+                0, // zFiltered (기본값)
+                75, // score (기본값)
+                new Date(sensorItem.timestamp || Date.now()) // timestamp
+              );
+
+              const angleCollection = await getAngleDataCollection();
+              
+              // 중복 데이터 확인 (sensorDataNumber 기반)
+              const existingAngleData = await angleCollection.findOne({ sensorDataNumber: dataNumber });
+              
+              if (existingAngleData) {
+                // 기존 각도 데이터 업데이트
+                console.log(`Duplicate angle data detected for index ${i}, updating existing data`);
+                const updateAngleResult = await angleCollection.replaceOne(
+                  { sensorDataNumber: dataNumber },
+                  createdAngleData
+                );
+                
+                if (updateAngleResult.modifiedCount > 0) {
+                  console.log(`Angle data updated successfully for index ${i}`);
+                }
+              } else {
+                // 새 각도 데이터 삽입
+                const angleInsertResult = await angleCollection.insertOne(createdAngleData);
+                console.log(`Angle data inserted successfully for index ${i}:`, angleInsertResult.insertedId);
+              }
+
+              // processedToAngle 플래그를 true로 업데이트
+              await collection.updateOne(
+                { number: dataNumber },
+                { $set: { processedToAngle: true, updatedAt: new Date() } }
+              );
+
+            } catch (angleError) {
+              console.error(`Error converting to angle data for index ${i}:`, angleError);
+              // 각도 변환 실패는 전체 처리를 중단하지 않고 경고만 로그
+            }
+          }
+          
+        } catch (dbError) {
+          console.error(`Database error for index ${i}:`, dbError);
+          errors.push({
+            index: i,
+            error: `Database error: ${(dbError as Error).message}`
+          });
         }
-      } catch (error) {
-        console.error('Database error:', error);
-        throw error;
+
+      } catch (itemError) {
+        console.error(`Error processing sensor data at index ${i}:`, itemError);
+        errors.push({
+          index: i,
+          error: `Processing error: ${(itemError as Error).message}`
+        });
       }
-    } catch (error) {
-      console.error('Error processing sensor data:', error);
-      throw error;
+    }
+
+    // 결과 응답
+    const hasErrors = errors.length > 0;
+    const hasSuccesses = results.length > 0;
+
+    if (hasSuccesses && !hasErrors) {
+      // 모든 데이터가 성공적으로 처리됨
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: `Successfully processed ${results.length} sensor data items`,
+          totalProcessed: body.length,
+          results: results
+        },
+        { status: 201 }
+      );
+    } else if (hasSuccesses && hasErrors) {
+      // 일부 성공, 일부 실패
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `Partially processed ${results.length}/${body.length} sensor data items`,
+          totalProcessed: body.length,
+          successCount: results.length,
+          errorCount: errors.length,
+          results: results,
+          errors: errors
+        },
+        { status: 207 } // Multi-Status
+      );
+    } else {
+      // 모든 데이터 처리 실패
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `Failed to process all ${body.length} sensor data items`,
+          totalProcessed: body.length,
+          errorCount: errors.length,
+          errors: errors
+        },
+        { status: 400 }
+      );
     }
     
   } catch (error) {
@@ -365,11 +420,16 @@ export async function PUT(request: NextRequest) {
       );
     }
     
+    // 소수점 2자리로 반올림
+    const roundedX = Math.round(body.accel.x * 100) / 100;
+    const roundedY = Math.round(body.accel.y * 100) / 100;
+    const roundedZ = Math.round(body.accel.z * 100) / 100;
+    
     // 업데이트할 데이터 객체 생성
     const updatedSensorValues: RawSensorValues = {
-      x_accel: body.accel.x,
-      y_accel: body.accel.y,
-      z_accel: body.accel.z,
+      x_accel: roundedX,
+      y_accel: roundedY,
+      z_accel: roundedZ,
     };
     const updatedData = createRawSensorData(
       updatedSensorValues,
@@ -393,7 +453,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const magnitude = getAccelerationMagnitude(body.accel.x, body.accel.y, body.accel.z);
+    const magnitude = getAccelerationMagnitude(roundedX, roundedY, roundedZ);
     
     return NextResponse.json({
       success: true,
@@ -401,7 +461,12 @@ export async function PUT(request: NextRequest) {
       data: {
         number: updatedData.number,
         magnitude: Number(magnitude.toFixed(3)),
-        modified: updateResult.modifiedCount > 0
+        modified: updateResult.modifiedCount > 0,
+        rounded_values: {
+          x_accel: roundedX,
+          y_accel: roundedY,
+          z_accel: roundedZ
+        }
       }
     });
     
@@ -479,7 +544,45 @@ export async function DELETE(request: NextRequest) {
 }
 
 /**
- * 센서 데이터 유효성 검증 함수
+ * 배열 형식 센서 데이터 항목 유효성 검증 함수
+ * 
+ * @param data 검증할 개별 센서 데이터 항목
+ * @param index 배열에서의 인덱스 (에러 메시지용)
+ * @returns 검증 결과 객체
+ */
+function validateSensorArrayItem(data: any, index: number): { isValid: boolean; message?: string } {
+  // 기본 타입 검증
+  if (!data || typeof data !== 'object') {
+    return { isValid: false, message: `Item at index ${index} must be an object` };
+  }
+  
+  // 가속도 값 검증
+  const { x_accel, y_accel, z_accel } = data;
+  if (typeof x_accel !== 'number' || typeof y_accel !== 'number' || typeof z_accel !== 'number') {
+    return { isValid: false, message: `Item at index ${index}: x_accel, y_accel, and z_accel must be numbers` };
+  }
+  
+  // 유한한 수인지 검증
+  if (!isFinite(x_accel) || !isFinite(y_accel) || !isFinite(z_accel)) {
+    return { isValid: false, message: `Item at index ${index}: acceleration values must be finite numbers` };
+  }
+  
+  // 합리적인 범위 내인지 검증 (-20g ~ +20g)
+  const maxAccel = 20.0;
+  if (Math.abs(x_accel) > maxAccel || Math.abs(y_accel) > maxAccel || Math.abs(z_accel) > maxAccel) {
+    return { isValid: false, message: `Item at index ${index}: acceleration values must be within ±${maxAccel}g range` };
+  }
+  
+  // timestamp 검증 (선택적 필드, 있으면 숫자여야 함)
+  if (data.timestamp && (typeof data.timestamp !== 'number' || !isFinite(data.timestamp))) {
+    return { isValid: false, message: `Item at index ${index}: timestamp must be a valid number (unix timestamp)` };
+  }
+  
+  return { isValid: true };
+}
+
+/**
+ * 센서 데이터 유효성 검증 함수 (기존 단일 객체 형식용 - PUT 요청 등에서 사용)
  * 
  * @param data 검증할 데이터 객체
  * @returns 검증 결과 객체
@@ -506,8 +609,8 @@ function validateSensorData(data: any): { isValid: boolean; message?: string } {
     return { isValid: false, message: 'acceleration values must be finite numbers' };
   }
   
-  // 합리적인 범위 내인지 검증 (-10g ~ +10g)
-  const maxAccel = 10.0;
+  // 합리적인 범위 내인지 검증 (-20g ~ +20g)
+  const maxAccel = 20.0;
   if (Math.abs(x) > maxAccel || Math.abs(y) > maxAccel || Math.abs(z) > maxAccel) {
     return { isValid: false, message: `acceleration values must be within ±${maxAccel}g range` };
   }
