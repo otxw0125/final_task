@@ -8,6 +8,10 @@
         "source": "C:\\CookAndroid\\.gradle\\daemon\\7.4\\com.cookandroid.mth.app-main-31:\\mipmap-mdpi\\ic_launcher_round.webp"
     },
     {
+        "merged": "com.cookandroid.mth.app-merged_res-29:/drawable_arduino.jpg.flat",
+        "source": "com.cookandroid.mth.app-main-31:/drawable/arduino.jpg"
+    },
+    {
         "merged": "C:\\CookAndroid\\.gradle\\daemon\\7.4\\com.cookandroid.mth.app-merged_res-29:\\drawable-anydpi-v24_ic_launcher_foreground.xml.flat",
         "source": "C:\\CookAndroid\\.gradle\\daemon\\7.4\\com.cookandroid.mth.app-pngs-24:\\drawable-anydpi-v24\\ic_launcher_foreground.xml"
     },

@@ -8,17 +8,10 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified();
 // --- HC-06 (Classic Bluetooth) 관련 ---
 #include <SoftwareSerial.h>
 
-const int bluetoothTx = 7; // 아두이노 7번 핀 -> HC-06 RXD 핀 (5V to 3.3V 전압 분배 필요)
+const int bluetoothTx = 7; // 아두이노 7번 핀 -> HC-06 RXD 핀
 const int bluetoothRx = 6; // 아두이노 6번 핀 <- HC-06 TXD 핀
-// 아두이노의 SoftwareSerial RX 핀 (6번)에 HC-06의 TXD 핀을 연결합니다.
-// 아두이노의 SoftwareSerial TX 핀 (7번)에 HC-06의 RXD 핀을 연결합니다.
-// 5V 아두이노 사용 시 HC-06의 3.3V TXD 신호가 아두이노 RXD(5V)로 들어가므로,
-// 아두이노 RXD 핀에 전압 분배 저항을 사용하여 3.3V 신호로 낮춰주는 것이 좋습니다.
-// (예: 아두이노 7번 핀 -(1k옴)- 중간점 -(2k옴)- GND. 중간점에서 HC-06 RXD 핀으로 연결)
-SoftwareSerial hc06(bluetoothRx, bluetoothTx); // HC-06 통신용 SoftwareSerial 객체 생성
 
-bool isSendingData = false; // 데이터 전송 상태를 관리하는 플래그 (초기값 false)
-String receivedCommand = ""; // 수신된 명령을 저장할 변수 (줄바꿈 기준으로 패킷 처리)
+SoftwareSerial hc06(bluetoothRx, bluetoothTx);
 
 #define HC06_BAUD_RATE 9600 // HC-06 모듈의 기본 통신 속도 (모듈 설정과 일치해야 함)
 // --- HC-06 관련 끝 ---

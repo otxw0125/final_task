@@ -2905,6 +2905,7 @@ drawable abc_textfield_search_activated_mtrl_alpha
 drawable abc_textfield_search_default_mtrl_alpha
 drawable abc_textfield_search_material
 drawable abc_vector_test
+drawable arduino
 drawable avd_hide_password
 drawable avd_show_password
 drawable btn_checkbox_checked_mtrl
@@ -3092,6 +3093,7 @@ id animateToStart
 id antiClockwise
 id anticipate
 id arc
+id arduinoIconImageView
 id asConfigured
 id async
 id auto

@@ -8,11 +8,13 @@ color sky_blue
 color teal_200
 color teal_700
 color white
+drawable arduino
 drawable ic_launcher_background
 drawable ic_launcher_foreground
 drawable ic_notification
 drawable ic_o
 drawable ic_x
+id arduinoIconImageView
 id baselineTextView
 id connectButton
 id dataTextView

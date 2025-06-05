@@ -2904,6 +2904,7 @@ int drawable abc_textfield_search_activated_mtrl_alpha 0x7f070074
 int drawable abc_textfield_search_default_mtrl_alpha 0x7f070075
 int drawable abc_textfield_search_material 0x7f070076
 int drawable abc_vector_test 0x7f070077
+int drawable arduino 0x7f0700e2
 int drawable avd_hide_password 0x7f070078
 int drawable avd_show_password 0x7f070079
 int drawable btn_checkbox_checked_mtrl 0x7f07007a
@@ -3091,6 +3092,7 @@ int id animateToStart 0x7f08004d
 int id antiClockwise 0x7f08004e
 int id anticipate 0x7f08004f
 int id arc 0x7f080050
+int id arduinoIconImageView 0x7f0801f3
 int id asConfigured 0x7f080051
 int id async 0x7f080052
 int id auto 0x7f080053
