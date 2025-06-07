@@ -1,14 +1,13 @@
 import { ObjectId } from 'mongodb';
 
 /**
- * AngleData 인터페이스 - 자세 각도 데이터 모델 정의
+ * AngleData 인터페이스 - 자세 각도 데이터 모델 정의 (앉은 자세 전용)
  * 
- * 가속도 센서 데이터로부터 계산된 각도 정보를 저장하는 구조
+ * 가속도 센서 데이터로부터 계산된 앉은 자세의 기울기 정보를 저장하는 구조
  */
 export interface AnglesValues {
-  x: number;
-  y: number;
-  z: number;
+  x: number; // 좌우 기울기
+  y: number; // 앞뒤 기울기
 }
 
 export interface AngleData {
@@ -23,7 +22,6 @@ export interface AngleData {
   riskLevel?: 'safe' | 'warning' | 'danger' | 'unknown';
   summaryMessage?: string;
   detailedAdvice?: string[];
-  // feedbackPerAxis?: any; // 필요하다면 이것도 저장 가능하나, 데이터가 커질 수 있음
 
   // 기존 filtered, scoreData 필드는 일단 유지하거나, 점진적으로 제거 고려
   filtered?: AnglesValues;
@@ -44,16 +42,14 @@ export interface AngleDataWithId extends Omit<AngleData, '_id'> {
 }
 
 /**
- * 새로운 각도 데이터 객체 생성
+ * 새로운 각도 데이터 객체 생성 (앉은 자세용)
  */
 export function createAngleData(
   sensorDataNumberInput: number,
-  xAngle: number,
-  yAngle: number,
-  zAngle: number,
-  xFiltered: number = 0,
-  yFiltered: number = 0,
-  zFiltered: number = 0,
+  xAngle: number,           // 좌우 기울기
+  yAngle: number,           // 앞뒤 기울기
+  xFiltered: number = 0,    // 좌우 기울기 필터링된 값
+  yFiltered: number = 0,    // 앞뒤 기울기 필터링된 값
   score: number = 75,
   timestamp: Date = new Date()
 ): AngleData {
@@ -72,14 +68,12 @@ export function createAngleData(
     sensorDataNumber: sensorDataNumberInput,
     timestamp,
     angles: {
-      x: xAngle,
-      y: yAngle,
-      z: zAngle
+      x: xAngle,  // 좌우 기울기
+      y: yAngle   // 앞뒤 기울기
     },
     filtered: {
-      x: xFiltered,
-      y: yFiltered,
-      z: zFiltered
+      x: xFiltered, // 좌우 기울기 필터링된 값
+      y: yFiltered  // 앞뒤 기울기 필터링된 값
     },
     scoreData: {
       score,

@@ -173,12 +173,10 @@ export async function POST(request: NextRequest) {
               const angleValues = convertAccelToAngles(sensorValuesInput);
               const createdAngleData = createAngleData(
                 dataNumber, // sensorDataNumber
-                angleValues.x, // xAngle
-                angleValues.y, // yAngle  
-                angleValues.z, // zAngle
-                0, // xFiltered (기본값)
-                0, // yFiltered (기본값)
-                0, // zFiltered (기본값)
+                angleValues.x, // xAngle (좌우 기울기)
+                angleValues.y, // yAngle (앞뒤 기울기)
+                angleValues.x, // xFiltered (필터링된 좌우 기울기, 동일한 값 사용)
+                angleValues.y, // yFiltered (필터링된 앞뒤 기울기, 동일한 값 사용)
                 75, // score (기본값)
                 new Date(sensorItem.timestamp || Date.now()) // timestamp
               );

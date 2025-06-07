@@ -29,181 +29,271 @@ const PostureAvatar: React.FC<PostureAvatarProps> = ({ feedback, width = 200, he
 
     // 캔버스 초기화
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#F3F4F6'; // 밝은 회색 배경 (예: bg-gray-100)
+    ctx.fillStyle = '#F3F4F6'; // 밝은 회색 배경
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const centerX = canvas.width / 2;
-    const avatarBottomMargin = 65; // 게이지 공간 확보
+    const avatarBottomMargin = 50; // 게이지 공간 확보
     const avatarHeight = canvas.height - avatarBottomMargin;
     
-    // 사용자 정의 색상
+    // 색상 정의
     const chairColor = '#A1A1AA'; // zinc-400
-    const safeColor = getPartColor('safe');
-    const warningColor = getPartColor('warning');
-    const dangerColor = getPartColor('danger');
-    const unknownColor = getPartColor('unknown');
     const textColor = '#374151'; // gray-700
+    const skinColor = '#fbbf24'; // amber-400
 
-    // --- 각도 변환 ---
-    const neckAngleRad = (feedback.x.angle || 0) * (Math.PI / 180); // X축: 상체 앞뒤
-    const waistAngleRad = (feedback.y.angle || 0) * (Math.PI / 180); // Y축: 상체 좌우
-    const torsoTwistAngle = feedback.z.angle || 0; // Z축: 몸통 비틀림 (회전 아이콘에 사용)
+    // 각도 변환 (앉은 자세용 - 시각적으로 완화)
+    const frontBackAngleRad = (feedback.x?.angle || 0) * (Math.PI / 180) * 0.3; // X축: 앞뒤 기울기, 30%로 완화
+    const leftRightAngleRad = (feedback.y?.angle || 0) * (Math.PI / 180) * 0.4; // Y축: 좌우 기울기, 40%로 완화
 
-    // --- 실루엣 그리기 ---
+    // 의자 크기 정의
     const chairSeatY = avatarHeight * 0.75;
     const chairSeatHeight = avatarHeight * 0.05;
     const chairBackHeight = avatarHeight * 0.4;
-    const chairBackWidth = canvas.width * 0.5;
-    const chairSeatWidth = canvas.width * 0.6;
+    const chairBackWidth = avatarHeight * 0.08;
+    const chairSeatWidth = avatarHeight * 0.35;
 
-    // 1. 의자 등받이
+    // 1. 의자 등받이 (왼쪽에 위치 - 더 자연스러운 자세)
     ctx.fillStyle = chairColor;
-    ctx.fillRect(centerX - chairBackWidth / 2, chairSeatY - chairBackHeight, chairBackWidth, chairBackHeight);
+    ctx.fillRect(
+      centerX - chairSeatWidth * 0.5, 
+      chairSeatY - chairBackHeight, 
+      chairBackWidth, 
+      chairBackHeight + chairSeatHeight
+    );
     
     // 2. 의자 좌석
-    ctx.fillRect(centerX - chairSeatWidth / 2, chairSeatY, chairSeatWidth, chairSeatHeight);
-
-    // 사용자 실루엣 크기
-    const userTorsoHeight = avatarHeight * 0.35;
-    const userTorsoWidth = canvas.width * 0.25;
-    const userHeadRadius = avatarHeight * 0.1;
-    
-    // 상체 전체의 기준점 (좌석 바로 위 중앙)
-    const upperBodyBaseX = centerX;
-    const upperBodyBaseY = chairSeatY;
-
-    // 3. 사용자 상체 (머리 + 몸통 통합, X/Y축 기울기 적용)
-    ctx.save();
-    // 상체의 회전 및 위치 기준점을 좌석 중앙 상단으로 이동
-    ctx.translate(upperBodyBaseX, upperBodyBaseY);
-    // Y축 회전 (좌우 기울기)
-    ctx.rotate(waistAngleRad * 0.8); 
-
-    // X축 기울기 (앞뒤 숙임/젖힘)에 따른 상체 세로 길이 변화 및 Y 오프셋
-    // 앞으로 숙이면 (neckAngleRad > 0) 짧아지고, 뒤로 젖히면 (neckAngleRad < 0) 원래 길이 유지 또는 살짝 길어짐
-    // Y 오프셋: 앞으로 숙이면 살짝 아래로, 뒤로 젖히면 살짝 위로
-    let torsoEffectiveHeight = userTorsoHeight;
-    let headEffectiveYOffset = -userTorsoHeight - userHeadRadius; // 머리가 몸통 바로 위에 오도록 기본 오프셋
-
-    // X축 각도에 따른 시각적 효과 계수 (0 ~ 1, 0이면 변화 없음, 1이면 최대 변화)
-    const xAngleEffectFactor = Math.sin(neckAngleRad) * 0.5; // 0.5는 변화 강도 조절
-
-    torsoEffectiveHeight = userTorsoHeight * (1 - Math.abs(xAngleEffectFactor) * 0.6); // 앞/뒤 기울기 시 높이 살짝 줄임 (최대 30% 감소)
-    headEffectiveYOffset -= userTorsoHeight * xAngleEffectFactor; // X축 기울기에 따라 머리 Y 위치 조정
-
-    // 몸통 그리기 (Y축 회전 후 X축 영향 반영)
-    // 몸통의 아랫부분을 기준점(0,0 - 즉 upperBodyBaseX, upperBodyBaseY)에 맞춤
-    ctx.fillStyle = getPartColor(feedback.y.risk); // 몸통은 Y축 위험도 색상
     ctx.fillRect(
-        -userTorsoWidth / 2, // 좌우 중앙 정렬
-        -torsoEffectiveHeight,  // 위쪽으로 그림 (기준점이 하단 중앙이므로)
-        userTorsoWidth, 
-        torsoEffectiveHeight
+      centerX - chairSeatWidth / 2, 
+      chairSeatY, 
+      chairSeatWidth, 
+      chairSeatHeight
     );
 
-    // 머리 그리기 (변형된 몸통 위에)
-    // 머리 중심은 몸통 상단 중앙에서 headEffectiveYOffset 만큼 떨어진 곳
+    // 3. 의자 팔걸이 (선택적)
+    ctx.fillRect(
+      centerX - chairSeatWidth / 2, 
+      chairSeatY - avatarHeight * 0.1, 
+      chairBackWidth * 0.6, 
+      avatarHeight * 0.15
+    );
+    ctx.fillRect(
+      centerX + chairSeatWidth / 2 - chairBackWidth * 0.6, 
+      chairSeatY - avatarHeight * 0.1, 
+      chairBackWidth * 0.6, 
+      avatarHeight * 0.15
+    );
+
+    // 사용자 몸체 크기 정의
+    const headRadius = avatarHeight * 0.06;
+    const neckWidth = avatarHeight * 0.04;
+    const neckHeight = avatarHeight * 0.08;
+    const shoulderWidth = avatarHeight * 0.08; // 측면 관점에 맞게 어깨 너비 대폭 축소
+    const shoulderHeight = avatarHeight * 0.12; // 어깨 높이 증가로 측면 두께감 표현
+    const upperTorsoHeight = avatarHeight * 0.15;
+    const lowerTorsoHeight = avatarHeight * 0.12;
+    const torsoWidth = avatarHeight * 0.14;
+    const hipWidth = avatarHeight * 0.16;
+    const hipHeight = avatarHeight * 0.08;
+    const thighHeight = avatarHeight * 0.18;
+
+    // 기준점: 엉덩이 중심 (좌석 위)
+    const hipCenterX = centerX;
+    const hipCenterY = chairSeatY;
+
+    // 4. 하체 그리기 (고정)
+    // 엉덩이
+    ctx.fillStyle = getPartColor('safe'); // 하체는 항상 안전 색상
+    ctx.fillRect(
+      hipCenterX - hipWidth / 2,
+      hipCenterY - hipHeight,
+      hipWidth,
+      hipHeight
+    );
+
+    // 5. 상체 그리기 (기울기 적용)
+    ctx.save();
+    ctx.translate(hipCenterX, hipCenterY - hipHeight); // 엉덩이 상단을 기준점으로
+    
+    // X축 기울기 (앞뒤) - 앞으로 기울어지면 시계방향 회전
+    ctx.rotate(frontBackAngleRad);
+    
+    // Y축 기울기 (좌우) - 좌우로 기울어지는 효과를 X축 이동으로 표현
+    const lateralOffset = Math.sin(leftRightAngleRad) * 8; // 좌우 기울기를 더 부드럽게 표현
+    ctx.translate(lateralOffset, 0);
+
+    // 하부 몸통 (허리 부분)
+    ctx.fillStyle = getPartColor(feedback.x?.risk || 'unknown'); // X축(앞뒤) 위험도 색상 - 허리에 부담
+    ctx.fillRect(
+      -torsoWidth / 2,
+      -lowerTorsoHeight,
+      torsoWidth,
+      lowerTorsoHeight
+    );
+
+    // 상부 몸통 (가슴 부분)
+    ctx.fillStyle = getPartColor(feedback.x?.risk || 'unknown'); // X축(앞뒤) 위험도 색상 - 허리에 부담
+    ctx.fillRect(
+      -torsoWidth / 2,
+      -lowerTorsoHeight - upperTorsoHeight,
+      torsoWidth,
+      upperTorsoHeight
+    );
+
+    // 어깨
+    ctx.fillStyle = getPartColor(feedback.y?.risk || 'unknown'); // Y축(좌우) 위험도 색상
+    ctx.fillRect(
+      -shoulderWidth / 2,
+      -lowerTorsoHeight - upperTorsoHeight - shoulderHeight / 2,
+      shoulderWidth,
+      shoulderHeight
+    );
+
+    // 목 그리기 (Y축 기울기에 더 민감하게 반응하지만 완화)
+    ctx.save();
+    ctx.translate(0, -lowerTorsoHeight - upperTorsoHeight - shoulderHeight / 2);
+    ctx.rotate(leftRightAngleRad * 0.5); // 목 기울기를 더 완화
+    
+    ctx.fillStyle = getPartColor(feedback.y?.risk || 'unknown'); // Y축(좌우) 위험도 색상
+    ctx.fillRect(
+      -neckWidth / 2,
+      -neckHeight,
+      neckWidth,
+      neckHeight
+    );
+
+    // 머리 그리기
     ctx.beginPath();
     ctx.arc(
-        0, // 몸통과 X축 중심 동일
-        headEffectiveYOffset + userHeadRadius, // 머리 Y 중심. 몸통 상단에서 반지름만큼 위로
-        userHeadRadius, 
-        0, 
-        Math.PI * 2
+      0,
+      -neckHeight - headRadius,
+      headRadius,
+      0,
+      Math.PI * 2
     );
-    ctx.fillStyle = getPartColor(feedback.x.risk); // 머리는 X축 위험도 색상
+    ctx.fillStyle = skinColor; // 머리는 피부색으로
     ctx.fill();
     
-    // 몸통 비틀림(Z축) 표시 - 몸통 중앙에 아이콘/텍스트
-    // 몸통의 시각적 중심은 (0, -torsoEffectiveHeight / 2)
-    ctx.fillStyle = textColor;
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const zRiskColor = getPartColor(feedback.z.risk);
-    const zArrow = torsoTwistAngle > 0 ? '↷' : '↶';
-    const zIndicatorText = Math.abs(torsoTwistAngle) > 1 ? `${zArrow} ${Math.round(torsoTwistAngle)}°` : zArrow;
-    
-    if (Math.abs(torsoTwistAngle) > 0.5) {
-        ctx.fillStyle = zRiskColor;
-        ctx.fillText(zIndicatorText, 0, -torsoEffectiveHeight / 2);
-    } else { // 비틀림이 거의 없을 때
-        ctx.fillStyle = zRiskColor;
-        ctx.beginPath();
-        ctx.arc(0, -torsoEffectiveHeight / 2, 3, 0, Math.PI * 2); // 작은 원
-        ctx.fill();
-    }
+    ctx.restore(); // 목 회전 복원
     ctx.restore(); // 상체 변환 복원
+
+    // 6. 기울기 정도 시각적 표시
+    // 좌우 기울기 표시선 (수직선) - 더 큰 각도에서만 표시
+    if (Math.abs(feedback.y?.angle || 0) > 10) { // 10도 이상일 때만 표시
+      ctx.strokeStyle = getPartColor(feedback.y?.risk || 'unknown'); // Y축(좌우) 위험도 색상
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(centerX, avatarHeight * 0.1);
+      ctx.lineTo(centerX + Math.sin((feedback.y?.angle || 0) * Math.PI / 180) * 15, avatarHeight * 0.9);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 앞뒤 기울기 표시 호 (상체 주변) - 더 큰 각도에서만 표시
+    if (Math.abs(feedback.x?.angle || 0) > 15) { // 15도 이상일 때만 표시
+      ctx.strokeStyle = getPartColor(feedback.x?.risk || 'unknown'); // X축(앞뒤) 위험도 색상
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const arcRadius = 45;
+      const visualAngle = (feedback.x?.angle || 0) * 0.3; // 시각적 각도 완화
+      const startAngle = -Math.PI / 6;
+      const endAngle = startAngle + (visualAngle * Math.PI / 180);
+      ctx.arc(centerX, chairSeatY - hipHeight * 2, arcRadius, startAngle, endAngle);
+      ctx.stroke();
+      
+      // 화살표 표시
+      ctx.fillStyle = getPartColor(feedback.x?.risk || 'unknown'); // X축(앞뒤) 위험도 색상
+      const arrowX = centerX + Math.cos(endAngle) * arcRadius;
+      const arrowY = chairSeatY - hipHeight * 2 + Math.sin(endAngle) * arcRadius;
+      ctx.beginPath();
+      ctx.arc(arrowX, arrowY, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // --- 게이지 그리기 ---
     const gaugeAreaY = canvas.height - avatarBottomMargin + 10;
-    const gaugeHeight = 15;
-    const gaugeWidth = canvas.width * 0.7;
+    const gaugeHeight = 12;
+    const gaugeWidth = canvas.width * 0.8;
     const gaugeStartX = centerX - gaugeWidth / 2;
-    const labelWidth = 35; // "X:", "Y:", "Z:" 라벨 공간
-    const valueTextWidth = 40; // 각도 값 표시 공간
 
     const drawGauge = (
-        yPos: number, 
-        label: string, 
-        value: number, 
-        risk: 'safe' | 'warning' | 'danger' | 'unknown', 
-        normalRange: { min: number, max: number }
+      yPos: number,
+      label: string,
+      value: number,
+      risk: 'safe' | 'warning' | 'danger' | 'unknown',
+      normalRange: { min: number, max: number }
     ) => {
-        ctx.font = '11px sans-serif';
-        ctx.fillStyle = textColor;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, 10, yPos + gaugeHeight / 2);
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, 5, yPos + gaugeHeight / 2);
 
-        // 게이지 배경 (정상 범위 표시)
-        const rangeMin = Math.min(normalRange.min, normalRange.max);
-        const rangeMax = Math.max(normalRange.min, normalRange.max);
-        // 게이지 전체 범위는 -45 ~ 45 정도로 가정 (또는 normalRange를 훨씬 포함하는 범위)
-        const visualMin = -45; 
-        const visualMax = 45;
-        const totalRange = visualMax - visualMin;
+      // 게이지 배경
+      const visualMin = -60;
+      const visualMax = 60;
+      const totalRange = visualMax - visualMin;
 
-        // 정상 범위 바
-        const normalStartPercent = (rangeMin - visualMin) / totalRange;
-        const normalEndPercent = (rangeMax - visualMin) / totalRange;
-        ctx.fillStyle = '#E5E7EB'; // gray-200
-        ctx.fillRect(gaugeStartX, yPos, gaugeWidth, gaugeHeight);
-        
-        ctx.fillStyle = safeColor; // 정상 범위는 초록색
-        ctx.fillRect(
-            gaugeStartX + gaugeWidth * normalStartPercent, 
-            yPos, 
-            gaugeWidth * (normalEndPercent - normalStartPercent), 
-            gaugeHeight
-        );
-        
-        // 현재 값 포인터
-        const valuePercent = Math.max(0, Math.min(1, (value - visualMin) / totalRange));
-        const pointerX = gaugeStartX + gaugeWidth * valuePercent;
-        
-        ctx.fillStyle = getPartColor(risk);
-        ctx.beginPath();
-        ctx.moveTo(pointerX, yPos - 3);
-        ctx.lineTo(pointerX - 3, yPos + gaugeHeight + 3);
-        ctx.lineTo(pointerX + 3, yPos + gaugeHeight + 3);
-        ctx.closePath();
-        ctx.fill();
+      // 전체 게이지 배경
+      ctx.fillStyle = '#E5E7EB'; // gray-200
+      ctx.fillRect(gaugeStartX, yPos, gaugeWidth, gaugeHeight);
 
-        // 값 텍스트
-        ctx.fillStyle = getPartColor(risk);
-        ctx.textAlign = 'right';
-        ctx.fillText(`${Math.round(value)}°`, canvas.width - 10, yPos + gaugeHeight / 2);
+      // 정상 범위 표시
+      const normalStartPercent = (normalRange.min - visualMin) / totalRange;
+      const normalEndPercent = (normalRange.max - visualMin) / totalRange;
+      ctx.fillStyle = '#4ade80'; // green-400 (정상 범위)
+      ctx.fillRect(
+        gaugeStartX + gaugeWidth * Math.max(0, normalStartPercent),
+        yPos,
+        gaugeWidth * Math.max(0, Math.min(1, normalEndPercent - normalStartPercent)),
+        gaugeHeight
+      );
+
+      // 현재 값 포인터
+      const valuePercent = Math.max(0, Math.min(1, (value - visualMin) / totalRange));
+      const pointerX = gaugeStartX + gaugeWidth * valuePercent;
+
+      ctx.fillStyle = getPartColor(risk);
+      ctx.beginPath();
+      ctx.moveTo(pointerX, yPos - 2);
+      ctx.lineTo(pointerX - 3, yPos + gaugeHeight + 2);
+      ctx.lineTo(pointerX + 3, yPos + gaugeHeight + 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 값 텍스트
+      ctx.fillStyle = getPartColor(risk);
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(value)}°`, canvas.width - 5, yPos + gaugeHeight / 2);
     };
 
-    drawGauge(gaugeAreaY, "앞뒤:", feedback.x.angle, feedback.x.risk, feedback.x.normalRange);
-    drawGauge(gaugeAreaY + gaugeHeight + 5, "좌우:", feedback.y.angle, feedback.y.risk, feedback.y.normalRange);
-    drawGauge(gaugeAreaY + (gaugeHeight + 5) * 2, "비틀림:", feedback.z.angle, feedback.z.risk, feedback.z.normalRange);
+    // X, Y축만 표시
+    drawGauge(
+      gaugeAreaY,
+      "앞뒤:",
+      feedback.x?.angle || 0,
+      feedback.x?.risk || 'unknown',
+      feedback.x?.normalRange || { min: -20, max: 20 }
+    );
+    
+    drawGauge(
+      gaugeAreaY + gaugeHeight + 5,
+      "좌우:",
+      feedback.y?.angle || 0,
+      feedback.y?.risk || 'unknown',
+      feedback.y?.normalRange || { min: -15, max: 15 }
+    );
 
-  }, [feedback, width, height]); // feedback, width, height 변경 시 다시 그리기
+  }, [feedback]);
 
   return (
-    <canvas ref={canvasRef} width={width} height={height} className="rounded-md shadow-inner" />
+    <canvas
+      ref={canvasRef}
+      width={width}
+      height={height}
+      className="border border-gray-300 rounded-md"
+      style={{ backgroundColor: '#F3F4F6' }}
+    />
   );
 };
 

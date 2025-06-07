@@ -2,47 +2,45 @@
 import { MultiAxisKalmanFilter } from './kalmanFilter';
 
 /**
- * 가속도 센서 데이터를 각도로 변환하는 알고리즘
+ * 가속도 센서 데이터를 각도로 변환하는 알고리즘 (앉은 자세 전용)
  * 
- * 이 모듈은 3축 가속도 센서 데이터를 받아서 다음과 같은 각도로 변환합니다:
- * - X축 각도 (피치): 목의 앞뒤 기울기
- * - Y축 각도 (롤): 허리의 좌우 기울기  
- * - Z축 각도 (요): 몸의 회전
+ * 이 모듈은 3축 가속도 센서 데이터를 받아서 앉은 자세의 기울기 각도로 변환합니다:
+ * - X축 각도: 앉은 자세의 좌우 기울기 (목과 어깨의 좌우 기울어짐)
+ * - Y축 각도: 앉은 자세의 상하 기울기 (허리의 상하 기울어짐) - 허리에 부담
  * 
  * 칼만 필터를 적용하여 센서 노이즈를 제거하고 안정적인 각도 값을 제공합니다.
  */
 
-// 전역 칼만 필터 인스턴스 (X, Y, Z 축에 대해 각각 독립적으로 필터링)
+// 전역 칼만 필터 인스턴스 (X, Y 축에 대해 각각 독립적으로 필터링)
 const kalmanFilter = new MultiAxisKalmanFilter(
-  ['X', 'Y', 'Z'],
+  ['X', 'Y'],
   0.01,  // 프로세스 노이즈 (작을수록 더 부드러운 결과)
   0.1    // 측정 노이즈 (클수록 측정값을 덜 신뢰)
 );
 
 /**
- * 각도 변환 결과 인터페이스
+ * 각도 변환 결과 인터페이스 (앉은 자세용)
  */
 export interface AngleResult {
-  X: number; // 피치 각도 (목의 앞뒤 기울기, -90도 ~ +90도)
-  Y: number; // 롤 각도 (허리의 좌우 기울기, -180도 ~ +180도)  
-  Z: number; // 요 각도 (몸의 회전, -90도 ~ +90도)
+  X: number; // 좌우 기울기 (목과 어깨의 좌우 기울어짐, -90도 ~ +90도)
+  Y: number; // 상하 기울기 (허리의 상하 기울어짐, -90도 ~ +90도) - 허리에 부담
 }
 
 /**
- * 가속도 데이터를 각도로 변환
+ * 가속도 데이터를 앉은 자세의 기울기 각도로 변환
  * 
- * 3축(X, Y, Z) 가속도 데이터를 각도(피치, 롤, 요)로 변환합니다.
- * 중력 가속도를 기준으로 각도를 계산하며, 칼만 필터를 적용하여 노이즈를 제거합니다.
+ * 3축(X, Y, Z) 가속도 데이터를 앉은 자세의 기울기 각도로 변환합니다.
+ * 센서가 등에 부착되어 있다는 가정하에 계산됩니다.
  * 
- * 계산 원리:
- * - 피치(X축): atan2(ay, sqrt(ax² + az²)) - 목의 앞뒤 기울기
- * - 롤(Y축): atan2(-ax, az) - 허리의 좌우 기울기
- * - 요(Z축): atan2(az, sqrt(ax² + ay²)) - 몸의 회전 (근사값)
+ * 계산 원리 (센서가 등에 부착된 앉은 자세 기준):
+ * - 정상 자세: Z축이 중력 방향(음수), X, Y축은 0에 가까움
+ * - X축 (좌우 기울기): 좌우로 기울어질 때 X축 변화를 기반으로 계산
+ * - Y축 (상하 기울기): 상하로 기울어질 때 Y축 변화를 기반으로 계산 - 허리에 부담
  * 
- * @param x X축 가속도 값 (일반적으로 -1 ~ +1 범위, 단위: g)
- * @param y Y축 가속도 값 (일반적으로 -1 ~ +1 범위, 단위: g)
- * @param z Z축 가속도 값 (일반적으로 0.5 ~ 1 범위, 단위: g, 중력 방향)
- * @returns 각도 데이터 객체 (X: 피치, Y: 롤, Z: 요, 단위: 도)
+ * @param x X축 가속도 값 (좌우 방향, 단위: g)
+ * @param y Y축 가속도 값 (상하 방향, 단위: g) 
+ * @param z Z축 가속도 값 (상하 방향, 단위: g)
+ * @returns 각도 데이터 객체 (X: 좌우 기울기, Y: 상하 기울기, 단위: 도)
  */
 export function accelerationToAngle(x: number, y: number, z: number): AngleResult {
   // 입력값 유효성 검사
@@ -54,36 +52,50 @@ export function accelerationToAngle(x: number, y: number, z: number): AngleResul
   const threshold = 1e-6;
   const ax = Math.abs(x) < threshold ? 0 : x;
   const ay = Math.abs(y) < threshold ? 0 : y;
-  const az = Math.abs(z) < threshold ? threshold : z; // z는 0이 되면 안 됨
+  const az = Math.abs(z) < threshold ? (z < 0 ? -threshold : threshold) : z;
 
-  // X축 회전 각도 (피치) - 목의 앞뒤 기울기
-  // 공식: atan2(ay, sqrt(ax² + az²))
-  const pitchRad = Math.atan2(ay, Math.sqrt(ax * ax + az * az));
-  const pitchDeg = pitchRad * (180 / Math.PI);
+  // 센서가 등에 부착된 경우의 각도 계산
+  // 일반적으로 정상 자세에서 Z축은 -1g에 가까움 (중력 반대 방향)
   
-  // Y축 회전 각도 (롤) - 허리의 좌우 기울기
-  // 공식: atan2(-ax, az)
-  const rollRad = Math.atan2(-ax, az);
-  const rollDeg = rollRad * (180 / Math.PI);
+  // X축 기울기 (좌우) 계산
+  // atan2를 사용하되, Z축이 주요 기준축이 되도록 계산 (센서의 X축 값을 사용)
+  let leftRightRad = Math.atan2(ax, Math.abs(az));
+  let leftRightDeg = leftRightRad * (180 / Math.PI);
   
-  // Z축 회전 각도 (요) - 몸의 회전
-  // 가속도 센서만으로는 정확한 요 각도 계산이 어려우므로 근사값 사용
-  // 공식: atan2(az, sqrt(ax² + ay²))
-  const yawRad = Math.atan2(az, Math.sqrt(ax * ax + ay * ay));
-  const yawDeg = yawRad * (180 / Math.PI);
+  // Y축 기울기 (상하) 계산 - 허리에 부담이 가는 축
+  // atan2를 사용하여 상하 기울기 계산 (센서의 Y축 값을 사용)
+  let upDownRad = Math.atan2(ay, Math.abs(az));
+  let upDownDeg = upDownRad * (180 / Math.PI);
+
+  // Z축 방향에 따른 보정
+  // Z축이 양수면 센서가 뒤집혀 있는 상태 (매우 많이 기울어진 경우)
+  if (az > 0) {
+    // 180도 보정 적용
+    leftRightDeg = leftRightDeg > 0 ? 180 - leftRightDeg : -180 - leftRightDeg;
+    upDownDeg = upDownDeg > 0 ? 180 - upDownDeg : -180 - upDownDeg;
+  }
+
+  // 각도 범위를 현실적인 앉은 자세 범위로 제한
+  // 정상적인 앉은 자세에서는 ±45도를 넘지 않도록 제한
+  leftRightDeg = Math.max(-45, Math.min(45, leftRightDeg));
+  upDownDeg = Math.max(-45, Math.min(45, upDownDeg));
+  
+  // 추가적인 스케일링: 센서 민감도 조정
+  // 실제 자세 변화보다 센서 값이 과도하게 클 수 있으므로 스케일 다운
+  const scaleFactor = 0.7; // 30% 감소하여 더 현실적인 값으로 조정
+  leftRightDeg *= scaleFactor;
+  upDownDeg *= scaleFactor;
   
   // 칼만 필터 적용하여 노이즈 제거
   const filteredAngles = kalmanFilter.updateAll({
-    X: pitchDeg,
-    Y: rollDeg,
-    Z: yawDeg
+    X: leftRightDeg,  // X축: 좌우 기울기
+    Y: upDownDeg      // Y축: 상하 기울기 (허리에 부담)
   });
   
-  // 결과를 소수점 2자리까지 반올림하여 반환
+  // 결과를 소수점 1자리까지 반올림하여 반환
   return {
-    X: Number(filteredAngles.X.toFixed(2)),
-    Y: Number(filteredAngles.Y.toFixed(2)),
-    Z: Number(filteredAngles.Z.toFixed(2))
+    X: Number(filteredAngles.X.toFixed(1)), // 좌우 기울기
+    Y: Number(filteredAngles.Y.toFixed(1))  // 상하 기울기 (허리)
   };
 }
 
@@ -127,7 +139,7 @@ export function getAccelerationMagnitude(x: number, y: number, z: number): numbe
 }
 
 /**
- * 자세 안정성 평가
+ * 자세 안정성 평가 (앉은 자세용)
  * 
  * 연속된 각도 측정값들의 변화량을 분석하여 자세의 안정성을 평가합니다.
  * 값이 작을수록 안정적인 자세를 의미합니다.
@@ -142,10 +154,9 @@ export function calculatePostureStability(
 ): number {
   const deltaX = Math.abs(currentAngle.X - previousAngle.X);
   const deltaY = Math.abs(currentAngle.Y - previousAngle.Y);
-  const deltaZ = Math.abs(currentAngle.Z - previousAngle.Z);
   
-  // 가중 평균으로 전체 변화량 계산 (목과 허리에 더 큰 가중치)
-  return (deltaX * 0.4 + deltaY * 0.4 + deltaZ * 0.2);
+  // 좌우와 앞뒤 기울기에 동일한 가중치 적용
+  return (deltaX * 0.5 + deltaY * 0.5);
 }
 
 /**
@@ -161,42 +172,38 @@ export function formatAngle(angle: number): string {
 }
 
 /**
- * 각도 데이터를 사람이 읽기 쉬운 형태로 변환
+ * 각도 데이터를 사람이 읽기 쉬운 형태로 변환 (앉은 자세용)
  * 
  * @param angleResult 각도 데이터 객체
  * @returns 포맷된 각도 정보 객체
  */
 export function formatAngleResult(angleResult: AngleResult): {
-  pitch: string;
-  roll: string;
-  yaw: string;
+  leftRight: string;
+  frontBack: string;
   summary: string;
 } {
   return {
-    pitch: `목 기울기: ${formatAngle(angleResult.X)}`,
-    roll: `허리 기울기: ${formatAngle(angleResult.Y)}`,
-    yaw: `몸 회전: ${formatAngle(angleResult.Z)}`,
-    summary: `피치: ${formatAngle(angleResult.X)}, 롤: ${formatAngle(angleResult.Y)}, 요: ${formatAngle(angleResult.Z)}`
+    leftRight: `좌우 기울기: ${formatAngle(angleResult.X)}`,
+    frontBack: `상하 기울기: ${formatAngle(angleResult.Y)}`,
+    summary: `좌우: ${formatAngle(angleResult.X)}, 상하: ${formatAngle(angleResult.Y)}`
   };
 }
 
 /**
- * 각도 데이터가 정상 범위 내에 있는지 확인
+ * 각도 데이터가 정상 범위 내에 있는지 확인 (앉은 자세용)
  * 
  * @param angleResult 각도 데이터 객체
  * @returns 정상 범위 내 여부
  */
 export function isAngleWithinNormalRange(angleResult: AngleResult): boolean {
-  // 정상적인 자세 범위 (도 단위)
+  // 앉은 자세의 정상적인 기울기 범위 (도 단위)
   const normalRanges = {
-    X: { min: -30, max: 30 },  // 피치: -30도 ~ +30도
-    Y: { min: -20, max: 20 },  // 롤: -20도 ~ +20도  
-    Z: { min: -15, max: 15 }   // 요: -15도 ~ +15도
+    X: { min: -15, max: 15 },  // 좌우: -15도 ~ +15도 (목과 어깨의 좌우 기울어짐)
+    Y: { min: -20, max: 20 }   // 상하: -20도 ~ +20도 (허리의 상하 기울어짐) - 허리에 부담
   };
   
   return (
     angleResult.X >= normalRanges.X.min && angleResult.X <= normalRanges.X.max &&
-    angleResult.Y >= normalRanges.Y.min && angleResult.Y <= normalRanges.Y.max &&
-    angleResult.Z >= normalRanges.Z.min && angleResult.Z <= normalRanges.Z.max
+    angleResult.Y >= normalRanges.Y.min && angleResult.Y <= normalRanges.Y.max
   );
 }

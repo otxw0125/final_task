@@ -34,7 +34,7 @@ const { AngleDataCollection, createAngleData } = await import('../lib/models/Ang
  */
 
 // 배치 처리 설정
-const BATCH_SIZE = 100; // 한 번에 처리할 데이터 수
+const BATCH_SIZE = 500; // 한 번에 처리할 데이터 수 (100 -> 500으로 증가)
 const MAX_RETRY_ATTEMPTS = 3; // 실패 시 재시도 횟수
 const RETRY_DELAY_MS = 1000; // 재시도 간격 (밀리초)
 
@@ -153,16 +153,14 @@ export async function processRawData(options: {
         // 가속도 → 각도 변환
         const angles = accelerationToAngle(x, y, z);
         
-        // 각도 데이터 객체 생성
+        // 각도 데이터 객체 생성 (2축 시스템: X=좌우, Y=상하)
         const angleData = createAngleData(
           item.number,
-          angles.X,
-          angles.Y,
-          angles.Z,
-          angles.X, // 필터링된 X 값 (단순화를 위해 동일 값 사용)
-          angles.Y, // 필터링된 Y 값 (단순화를 위해 동일 값 사용)
-          angles.Z, // 필터링된 Z 값 (단순화를 위해 동일 값 사용)
-          calculateScore(angles), // 자세 점수 계산
+          angles.X,      // X축: 좌우 기울기
+          angles.Y,      // Y축: 상하 기울기 (목과 어깨에 부담)
+          angles.X,      // 필터링된 X 값 (좌우)
+          angles.Y,      // 필터링된 Y 값 (상하)
+          calculateScore(angles), // 자세 점수 계산 (2축 기반)
           item.timestamp
         );
         
@@ -433,11 +431,9 @@ export async function reprocessDataRange(
           item.number,
           angles.X,
           angles.Y,
-          angles.Z,
-          angles.X, // 필터링된 X 값 (단순화를 위해 동일 값 사용)
-          angles.Y, // 필터링된 Y 값 (단순화를 위해 동일 값 사용)
-          angles.Z, // 필터링된 Z 값 (단순화를 위해 동일 값 사용)
-          calculateScore(angles), // 자세 점수 계산
+          angles.X,
+          angles.Y,
+          calculateScore(angles),
           item.timestamp
         );
         
@@ -491,15 +487,17 @@ export async function reprocessDataRange(
   }
 }
 
-// 간단한 점수 계산 함수 (실제로는 더 복잡한 알고리즘이 필요할 수 있음)
-function calculateScore(angles: { X: number, Y: number, Z: number }): number {
+// 간단한 점수 계산 함수 (2축 시스템용: X=좌우, Y=상하)
+function calculateScore(angles: { X: number, Y: number }): number {
   // 각 축별 점수 계산 (0-100 범위)
-  const xScore = Math.max(0, 100 - Math.pow(Math.abs(angles.X) / 45, 1.5) * 100);
-  const yScore = Math.max(0, 100 - Math.pow(Math.abs(angles.Y) / 30, 1.5) * 100);
-  const zScore = Math.max(0, 100 - Math.pow(Math.abs(angles.Z) / 30, 1.5) * 100);
+  // X축 (좌우): 정상 범위 ±15도, 목과 어깨에 부담
+  const xScore = Math.max(0, 100 - Math.pow(Math.abs(angles.X) / 15, 1.5) * 100);
   
-  // 가중 평균으로 종합 점수 계산
-  return Math.round(xScore * 0.4 + yScore * 0.4 + zScore * 0.2);
+  // Y축 (상하): 정상 범위 ±20도, 허리에 부담이 가므로 더 중요하게 반영
+  const yScore = Math.max(0, 100 - Math.pow(Math.abs(angles.Y) / 20, 1.5) * 100);
+  
+  // 가중 평균으로 종합 점수 계산 (상하가 더 중요)
+  return Math.round(xScore * 0.3 + yScore * 0.7);
 }
 
 // 직접 실행 가능한 스크립트로 사용할 경우
