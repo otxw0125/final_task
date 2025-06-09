@@ -8,6 +8,7 @@ import { ObjectId } from 'mongodb';
 export interface AnglesValues {
   x: number; // 좌우 기울기
   y: number; // 앞뒤 기울기
+  z: number;
 }
 
 export interface AngleData {
@@ -69,11 +70,13 @@ export function createAngleData(
     timestamp,
     angles: {
       x: xAngle,  // 좌우 기울기
-      y: yAngle   // 앞뒤 기울기
+      y: yAngle, // 앞뒤 기울기
+      z: 0  
     },
     filtered: {
       x: xFiltered, // 좌우 기울기 필터링된 값
-      y: yFiltered  // 앞뒤 기울기 필터링된 값
+      y: yFiltered,  // 앞뒤 기울기 필터링된 값
+      z: 0
     },
     scoreData: {
       score,

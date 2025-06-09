@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 102;
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final String HC06_DEVICE_NAME = "HC-06";
-    private static final String WEB_SERVER_URL = "http://192.168.190.251:3000/api/sensor-data/raw";
+    private static final String WEB_SERVER_URL = "http://192.168.51.251:3000/api/sensor-data/raw";
     private static final String CHANNEL_ID = "posture_alert_channel";
     private static final int NOTIFICATION_ID = 1;
     private static final long ANGLE_THRESHOLD_DURATION = 5000; // 5초

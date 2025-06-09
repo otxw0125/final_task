@@ -30,12 +30,12 @@ export function convertAccelToAngles(accelValues: RawSensorValues): AnglesValues
   // 개별 값 검증
   if (typeof x_accel !== 'number' || typeof y_accel !== 'number' || typeof z_accel !== 'number') {
     console.error("[convertAccelToAngles] Invalid acceleration values:", { x_accel, y_accel, z_accel });
-    return { x: 0, y: 0, z: 0 };
+    return { x: 0, y: 0, z: 0};
   }
 
   if (x_accel === 0 && y_accel === 0 && z_accel === 0) {
     console.warn("[convertAccelToAngles] All accelerometer values are zero. Returning zero angles.");
-    return { x: 0, y: 0, z: 0 };
+    return { x: 0, y: 0, z: 0};
   }
 
   // X축 기울기 (Pitch): Gx와 YZ 평면 사이의 각도
@@ -56,6 +56,6 @@ export function convertAccelToAngles(accelValues: RawSensorValues): AnglesValues
   return {
     x: parseFloat(pitch_deviation.toFixed(2)), // Pitch 변화량
     y: parseFloat(roll_deviation.toFixed(2)),  // Roll 변화량
-    z: parseFloat(z_deviation.toFixed(2)),     // 사용 안함 (0)
+    z: parseFloat(z_deviation.toFixed(2))     // 사용 안함 (0)
   };
 } 
