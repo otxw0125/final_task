@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from "@/lib/db/mongodb";
 import { getAngleDataCollection, getRawSensorDataCollection } from "@/lib/db/collections";
 import { RawSensorData, RawSensorDataCollection } from "@/lib/models/RawSensorData";
-import { AngleData, AngleDataCollection } from "@/lib/models/AngleData";
+import { AngleData, AngleDataCollection, createAngleData } from "@/lib/models/AngleData";
 import { convertAccelToAngles } from "@/lib/utils/conversion";
-import { generatePostureFeedbackFromAngleData } from "@/lib/utils/postureEvaluator";
+import { calculatePostureScore } from "../posture-score/route";
+import { createPostureScore } from "@/lib/models/PostureScore";
 import { ObjectId } from 'mongodb';
 
 interface ProcessRequest {
@@ -48,6 +49,15 @@ export async function POST(request: NextRequest) {
 
     if (rawData.processedToAngle === true) {
       return NextResponse.json({ message: `Raw sensor data (ID: ${rawData._id}, Number: ${rawData.number}) has already been processed.`, existingAngleData: null }, { status: 200 });
+    }
+
+    // rawData.number 유효성 검사
+    if (!rawData.number || typeof rawData.number !== 'number') {
+      return NextResponse.json({
+        message: "Raw sensor data number is missing or invalid",
+        rawDataId: rawData._id,
+        rawDataNumber: rawData.number
+      }, { status: 400 });
     }
 
     // 디버깅: 센서 데이터 구조 확인
@@ -107,41 +117,85 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 각도 변환
-    const calculatedAngles = convertAccelToAngles(rawData.sensor_values);
-
-    // 자세 피드백 생성
-    const feedbackInput = {
-      angles: calculatedAngles,
-      // rawData.timestamp가 Date 객체가 아닐 수 있으므로, Date 객체로 변환 시도
-      timestamp: typeof rawData.timestamp === 'string' ? rawData.timestamp : new Date(rawData.timestamp).toISOString(),
-    };
-    const postureFeedback = generatePostureFeedbackFromAngleData(feedbackInput);
-
-    // AngleData 객체 직접 구성 (createAngleData 헬퍼 사용 X)
-    const newAngleEntry: Omit<AngleData, '_id'> = {
-      sensorDataNumber: rawData.number,
-      userId: rawData.userId, // userId가 있다면 전달
-      angles: calculatedAngles,
-      timestamp: new Date(rawData.timestamp), // 원본 RawData의 timestamp 저장 (Date 객체로)
-      
-      // generatePostureFeedbackFromAngleData 결과 저장
-      overallScore: postureFeedback.overallScore,
-      riskLevel: postureFeedback.riskLevel,
-      summaryMessage: postureFeedback.summaryMessage,
-      detailedAdvice: postureFeedback.detailedAdvice,
-      
-      // 기존 filtered 및 scoreData 필드는 일단 undefined 또는 기본값으로 둠
-      // 필요시 이 값들도 postureFeedback에서 파생하여 채울 수 있음
-      // filtered: undefined, 
-      // scoreData: undefined,
-
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    // 각도 변환 (convert-to-angle 방식과 동일하게)
+    const angleValues = convertAccelToAngles(rawData.sensor_values);
     
-    // AngleData 저장
-    const angleDataInsertResult = await angleDataCollection.insertOne(newAngleEntry);
+    // AngleData 생성 (convert-to-angle 방식 사용)
+    const angleData = createAngleData(
+      rawData.number,
+      angleValues.x,
+      angleValues.y,
+      angleValues.x, // xFiltered (동일한 값 사용)
+      angleValues.y, // yFiltered (동일한 값 사용)
+      75, // score 기본값
+      new Date(rawData.timestamp)
+    );
+
+    // 기존 AngleData가 있는지 확인
+    const existingAngleData = await angleDataCollection.findOne({ 
+      sensorDataNumber: rawData.number 
+    });
+
+    let angleDataSaved = false;
+    let angleDataResult = null;
+
+    if (existingAngleData) {
+      // 업데이트
+      const updateResult = await angleDataCollection.replaceOne(
+        { sensorDataNumber: rawData.number },
+        angleData
+      );
+      angleDataSaved = updateResult.modifiedCount > 0;
+      angleDataResult = { action: 'updated', modifiedCount: updateResult.modifiedCount };
+    } else {
+      // 새로 삽입
+      const insertResult = await angleDataCollection.insertOne(angleData);
+      angleDataSaved = true;
+      angleDataResult = { action: 'inserted', insertedId: insertResult.insertedId };
+    }
+
+    // 자세 점수 계산 및 저장 (각도 데이터가 성공적으로 저장된 경우)
+    if (angleDataSaved) {
+      try {
+        // 자세 점수 계산
+        const { score, neckScore, backScore, rotationScore, feedback } = calculatePostureScore(angleData);
+        
+        // PostureScore 객체 생성
+        const postureScore = createPostureScore(
+          rawData.number,
+          score,
+          neckScore,
+          backScore,
+          rotationScore,
+          feedback,
+          new Date(rawData.timestamp)
+        );
+        
+        // MongoDB에 자세 점수 저장
+        const { db } = await connectToDatabase();
+        const postureCollection = db.collection('posturescore');
+        
+        // 중복 체크 (동일한 number가 있는 경우)
+        const existingScore = await postureCollection.findOne({ number: postureScore.number });
+        
+        if (existingScore) {
+          // 업데이트
+          await postureCollection.updateOne(
+            { number: postureScore.number },
+            { $set: postureScore }
+          );
+          console.log(`Posture score updated for sensor data number ${rawData.number}`);
+        } else {
+          // 새 데이터 삽입
+          await postureCollection.insertOne(postureScore);
+          console.log(`Posture score inserted for sensor data number ${rawData.number}`);
+        }
+        
+      } catch (postureScoreError) {
+        console.error(`Error calculating/saving posture score for sensor data ${rawData.number}:`, postureScoreError);
+        // 자세 점수 계산/저장 실패는 전체 처리를 중단하지 않고 경고만 로그
+      }
+    }
     
     // RawSensorData의 processedToAngle 플래그 업데이트
     await rawSensorCollection.updateOne(
@@ -150,11 +204,11 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({
-      message: "Successfully converted raw sensor data to angle data and saved.",
+      message: "Successfully converted raw sensor data to angle data and calculated posture score.",
       rawSensorDataId: rawData._id,
       rawSensorDataNumber: rawData.number,
-      createdAngleDataId: angleDataInsertResult.insertedId,
-      calculatedAngles: calculatedAngles,
+      angleDataResult: angleDataResult,
+      calculatedAngles: angleValues,
     }, { status: 201 });
 
   } catch (error) {

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import PostureAvatar from './PostureAvatar';
+import PostureAvatar from '../../../components/visualization/PostureAvatar';
 
 // HTMLCanvasElement.prototype.getContext 모킹
 // getContext가 호출되었는지, 그리고 반환된 컨텍스트의 메서드들이 호출되었는지 스파이하기 위함입니다.
@@ -56,17 +56,21 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-const defaultAngles = { X: 0, Y: 0, Z: 0 };
+const defaultFeedback = {
+  x: { angle: 0, risk: 'safe' as const, deviation: 0, normalRange: { min: -5, max: 5 }, message: '정상' },
+  y: { angle: 0, risk: 'safe' as const, deviation: 0, normalRange: { min: -5, max: 5 }, message: '정상' },
+  z: { angle: 0, risk: 'safe' as const, deviation: 0, normalRange: { min: -5, max: 5 }, message: '정상' }
+};
 
 describe('PostureAvatar', () => {
   it('renders a canvas element and gets context', () => {
-    render(<PostureAvatar angles={defaultAngles} />);
+    render(<PostureAvatar feedback={defaultFeedback} />);
     const canvasElement = screen.getByTestId('posture-avatar-canvas');
     expect(canvasElement).toBeInTheDocument();
     expect(mockGetContext).toHaveBeenCalledWith('2d');
   });
 
-  it('calls canvas drawing methods when angles change', () => {
+  it('calls canvas drawing methods when feedback changes', () => {
     mockClearRect.mockClear();
     mockBeginPath.mockClear();
     mockArc.mockClear();
@@ -79,7 +83,7 @@ describe('PostureAvatar', () => {
     mockTranslate.mockClear();
     mockRotate.mockClear();
 
-    const { rerender } = render(<PostureAvatar angles={defaultAngles} />);
+    const { rerender } = render(<PostureAvatar feedback={defaultFeedback} />);
     
     expect(mockClearRect).toHaveBeenCalled();
     expect(mockBeginPath).toHaveBeenCalled();
@@ -105,25 +109,29 @@ describe('PostureAvatar', () => {
     mockTranslate.mockClear();
     mockRotate.mockClear();
 
-    const newAngles = { X: 10, Y: 5, Z: 2 };
-    rerender(<PostureAvatar angles={newAngles} />);
+    const newFeedback = {
+      x: { angle: 10, risk: 'warning' as const, deviation: 5, normalRange: { min: -5, max: 5 }, message: '주의' },
+      y: { angle: 5, risk: 'safe' as const, deviation: 0, normalRange: { min: -5, max: 5 }, message: '정상' },
+      z: { angle: 2, risk: 'safe' as const, deviation: 0, normalRange: { min: -5, max: 5 }, message: '정상' }
+    };
+    rerender(<PostureAvatar feedback={newFeedback} />);
 
     expect(mockClearRect).toHaveBeenCalled();
     expect(mockBeginPath).toHaveBeenCalled();
   });
 
   it('uses provided width and height for the canvas', () => {
-    render(<PostureAvatar angles={defaultAngles} width={200} height={250} />);
+    render(<PostureAvatar feedback={defaultFeedback} width={200} height={250} />);
     const canvasElement = screen.getByTestId('posture-avatar-canvas');
     expect(canvasElement).toHaveAttribute('width', '200');
     expect(canvasElement).toHaveAttribute('height', '250');
   });
 
   it('sets default width and height if not provided', () => {
-    render(<PostureAvatar angles={defaultAngles} />);
+    render(<PostureAvatar feedback={defaultFeedback} />);
     const canvasElement = screen.getByTestId('posture-avatar-canvas');
-    expect(canvasElement).toHaveAttribute('width', '300');
-    expect(canvasElement).toHaveAttribute('height', '400');
+    expect(canvasElement).toHaveAttribute('width', '200');
+    expect(canvasElement).toHaveAttribute('height', '300');
   });
 
   // 각도에 따른 구체적인 드로잉 변화를 테스트하려면 스냅샷 테스팅이나

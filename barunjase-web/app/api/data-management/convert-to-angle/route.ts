@@ -46,10 +46,8 @@ export async function POST(request: NextRequest) {
           rawData.number,
           angleValues.x,
           angleValues.y,
-          angleValues.z,
-          0, // xFiltered
-          0, // yFiltered  
-          0, // zFiltered
+          angleValues.x, // xFiltered (동일한 값 사용)
+          angleValues.y, // yFiltered (동일한 값 사용)
           75, // score 기본값
           new Date(rawData.timestamp)
         );

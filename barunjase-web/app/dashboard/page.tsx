@@ -114,7 +114,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             {/* X축 (좌우 기울기) */}
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">좌우 기울기 (X축)</h3>
+              <h3 className="text-lg font-semibold mb-4">상하 기울기 (X축)</h3>
               {feedback?.feedbackPerAxis.x ? (
                 <div>
                   <div className="flex justify-between items-center mb-2">
@@ -164,7 +164,7 @@ export default function Dashboard() {
 
             {/* Y축 (상하 기울기) */}
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">상하 기울기 (Y축)</h3>
+              <h3 className="text-lg font-semibold mb-4">좌우 기울기 (Y축)</h3>
               {feedback?.feedbackPerAxis.y ? (
                 <div>
                   <div className="flex justify-between items-center mb-2">

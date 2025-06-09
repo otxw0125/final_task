@@ -37,8 +37,8 @@ export interface CurrentPostureFeedback {
 
 // 정상 범위 정의 (앉은 자세용 - 더 현실적으로 조정)
 const NORMAL_RANGES = {
-  x: { min: -15, max: 15 },  // 좌우 기울기
-  y: { min: -20, max: 20 }   // 상하 기울기 (허리에 부담)
+  y: { min: -15, max: 15 },  // 좌우 기울기
+  x: { min: -20, max: 20 }   // 상하 기울기 (허리에 부담)
 };
 
 function getRiskLevel(angle: number, range: { min: number; max: number }): 'safe' | 'warning' | 'danger' {
@@ -57,8 +57,8 @@ function getRiskLevel(angle: number, range: { min: number; max: number }): 'safe
 
 function generateMessage(angle: number, axis: string, risk: 'safe' | 'warning' | 'danger'): string {
   const axisNames = {
-    x: { name: '좌우 기울기', direction: angle > 0 ? '오른쪽' : '왼쪽', body: '목과 어깨에' },
-    y: { name: '상하 기울기', direction: angle > 0 ? '위쪽' : '아래쪽', body: '허리에' }
+    y: { name: '좌우 기울기', direction: angle > 0 ? '오른쪽' : '왼쪽', body: '목과 어깨에' },
+    x: { name: '상하 기울기', direction: angle > 0 ? '위쪽' : '아래쪽', body: '허리에' }
   };
   
   const axisInfo = axisNames[axis as keyof typeof axisNames];
