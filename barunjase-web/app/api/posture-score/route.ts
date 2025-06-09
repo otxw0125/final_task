@@ -14,8 +14,7 @@ import { getAngleDataCollection } from '@/lib/db/collections';
 import { AngleData } from '@/lib/models/AngleData';
 import { createPostureScore, PostureScore } from '@/lib/models/PostureScore';
 
-// MongoDB 컬렉션 추가
-import { MongoClient } from 'mongodb';
+// import { MongoClient } from 'mongodb'; // 이 줄 제거
 import { connectToDatabase } from '@/lib/db/mongodb';
 
 /**
@@ -35,8 +34,9 @@ function calculatePostureScore(angleData: AngleData): {
   const IDEAL_Y_RANGE = { min: -5, max: 5 };    // 허리 기울기 (롤)
   const IDEAL_Z_RANGE = { min: -5, max: 5 };    // 회전 (요)
   
-  // 실제 각도 값
-  const { x: X, y: Y, z: Z } = angleData.angles;
+  // 실제 각도 값 (앉은 자세에서는 x, y만 사용)
+  const { x: X, y: Y } = angleData.angles;
+  const Z = 0; // 앉은 자세에서는 회전(Z축) 값을 0으로 고정
   
   // 각 축별 점수 계산 (0-100)
   let neckScore = 100;
@@ -138,8 +138,8 @@ export async function GET(request: NextRequest) {
     const { db } = await connectToDatabase();
     const collection = db.collection('posturescore');
     
-    // 쿼리 조건 생성
-    const query: any = {};
+    // 쿼리 조건 생성 - any 타입 대신 구체적인 타입 사용
+    const query: { timestamp?: { $gte?: Date; $lte?: Date } } = {};
     
     // 시간 범위 조건 추가
     if (fromParam || toParam) {
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
       data,
       stats
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('자세 점수 조회 중 오류 발생:', error);
     
     return NextResponse.json(
@@ -243,6 +243,14 @@ export async function POST(request: NextRequest) {
     
     const angleData = latestData[0] as AngleData;
     
+    // sensorDataNumber가 undefined인 경우 처리
+    if (angleData.sensorDataNumber === undefined) {
+      return NextResponse.json(
+        { error: '각도 데이터에 sensorDataNumber가 없습니다.' },
+        { status: 400 }
+      );
+    }
+    
     // 자세 점수 계산
     const { score, neckScore, backScore, rotationScore, feedback } = calculatePostureScore(angleData);
     
@@ -254,7 +262,7 @@ export async function POST(request: NextRequest) {
       backScore,
       rotationScore,
       feedback,
-      angleData.timestamp
+      typeof angleData.timestamp === 'string' ? new Date(angleData.timestamp) : angleData.timestamp
     );
     
     // MongoDB에 저장
@@ -287,7 +295,7 @@ export async function POST(request: NextRequest) {
         id: result.insertedId
       }, { status: 201 });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('자세 점수 저장 중 오류 발생:', error);
     
     return NextResponse.json(
@@ -296,3 +304,9 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * 각도 데이터로부터 자세 점수를 계산하는 유틸리티 함수
+ * sensor-data/raw에서도 사용할 수 있도록 export
+ */
+export { calculatePostureScore };

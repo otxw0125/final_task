@@ -5,6 +5,9 @@ import { createRawSensorData, RawSensorData, RawSensorValues } from '../../../..
 import { createAngleData, AngleData } from '../../../../lib/models/AngleData';
 import { getAccelerationMagnitude } from '../../../../lib/algorithms/angleConverter';
 import { convertAccelToAngles } from '../../../../lib/utils/conversion';
+import { calculatePostureScore } from '../../posture-score/route';
+import { createPostureScore } from '../../../../lib/models/PostureScore';
+import { connectToDatabase } from '../../../../lib/db/mongodb';
 
 /**
  * 센서 데이터 수집 API 엔드포인트
@@ -186,6 +189,8 @@ export async function POST(request: NextRequest) {
               // 중복 데이터 확인 (sensorDataNumber 기반)
               const existingAngleData = await angleCollection.findOne({ sensorDataNumber: dataNumber });
               
+              let angleDataSaved = false;
+              
               if (existingAngleData) {
                 // 기존 각도 데이터 업데이트
                 console.log(`Duplicate angle data detected for index ${i}, updating existing data`);
@@ -196,11 +201,56 @@ export async function POST(request: NextRequest) {
                 
                 if (updateAngleResult.modifiedCount > 0) {
                   console.log(`Angle data updated successfully for index ${i}`);
+                  angleDataSaved = true;
                 }
               } else {
                 // 새 각도 데이터 삽입
                 const angleInsertResult = await angleCollection.insertOne(createdAngleData);
                 console.log(`Angle data inserted successfully for index ${i}:`, angleInsertResult.insertedId);
+                angleDataSaved = true;
+              }
+
+              // 각도 데이터가 성공적으로 저장된 경우 자세 점수 계산 및 저장
+              if (angleDataSaved) {
+                try {
+                  // 자세 점수 계산
+                  const { score, neckScore, backScore, rotationScore, feedback } = calculatePostureScore(createdAngleData);
+                  
+                  // PostureScore 객체 생성
+                  const postureScore = createPostureScore(
+                    dataNumber,
+                    score,
+                    neckScore,
+                    backScore,
+                    rotationScore,
+                    feedback,
+                    new Date(sensorItem.timestamp || Date.now())
+                  );
+                  
+                  // MongoDB에 자세 점수 저장
+                  const { db } = await connectToDatabase();
+                  const postureCollection = db.collection('posturescore');
+                  
+                  // 중복 체크 (동일한 number가 있는 경우)
+                  const existingScore = await postureCollection.findOne({ number: postureScore.number });
+                  
+                  if (existingScore) {
+                    // 업데이트
+                    await postureCollection.updateOne(
+                      { number: postureScore.number },
+                      { $set: postureScore }
+                    );
+                    console.log(`Posture score updated for index ${i}`);
+                  } else {
+                    // 새 데이터 삽입
+                    await postureCollection.insertOne(postureScore);
+                    console.log(`Posture score inserted for index ${i}`);
+                  }
+                  
+                } catch (postureScoreError) {
+                  console.error(`Error calculating/saving posture score for index ${i}:`, postureScoreError);
+                  // 자세 점수 계산/저장 실패는 전체 처리를 중단하지 않고 경고만 로그
+                }
               }
 
               // processedToAngle 플래그를 true로 업데이트
