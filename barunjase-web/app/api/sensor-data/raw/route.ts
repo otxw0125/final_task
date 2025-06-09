@@ -1,12 +1,10 @@
 //file app/api/sensor-data/raw/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getRawSensorDataCollection, getAngleDataCollection } from '../../../../lib/db/collections';
+import { getRawSensorDataCollection, getAngleDataCollection, getPostureScoreCollection } from '../../../../lib/db/collections';
 import { createRawSensorData, RawSensorData, RawSensorValues } from '../../../../lib/models/RawSensorData';
 import { createAngleData, AngleData } from '../../../../lib/models/AngleData';
-import { getAccelerationMagnitude } from '../../../../lib/algorithms/angleConverter';
-import { convertAccelToAngles } from '../../../../lib/utils/conversion';
-import { calculatePostureScore } from '../../posture-score/route';
-import { createPostureScore } from '../../../../lib/models/PostureScore';
+import { getAccelerationMagnitude, accelerationToAngle } from '../../../../lib/algorithms/angleConverter';
+import { analyzePostureFromAngles, createPostureScoreFromAnalysis } from '../../../../lib/algorithms/postureAnalyzer';
 import { connectToDatabase } from '../../../../lib/db/mongodb';
 
 /**
@@ -173,16 +171,36 @@ export async function POST(request: NextRequest) {
           // 센서 데이터가 성공적으로 저장된 경우에만 각도 변환 수행
           if (sensorDataSaved) {
             try {
-              const angleValues = convertAccelToAngles(sensorValuesInput);
+              // 각도 변환 (단계적 데이터 처리와 동일한 방식 사용)
+              const angleResult = accelerationToAngle(
+                roundedX,
+                roundedY,
+                roundedZ
+              );
+
+              // 2축 시스템용 점수 계산 함수 (X=좌우, Y=상하)
+              const calculateSimpleScore = (angles: { X: number, Y: number }): number => {
+                // X축 (좌우): 정상 범위 ±15도, 목과 어깨에 부담
+                const xScore = Math.max(0, 100 - Math.pow(Math.abs(angles.X) / 15, 1.5) * 100);
+                
+                // Y축 (상하): 정상 범위 ±20도, 허리에 부담이 가므로 더 중요하게 반영
+                const yScore = Math.max(0, 100 - Math.pow(Math.abs(angles.Y) / 20, 1.5) * 100);
+                
+                // 가중 평균으로 종합 점수 계산 (상하가 더 중요)
+                return Math.round(xScore * 0.3 + yScore * 0.7);
+              };
+
               const createdAngleData = createAngleData(
                 dataNumber, // sensorDataNumber
-                angleValues.x, // xAngle (좌우 기울기)
-                angleValues.y, // yAngle (앞뒤 기울기)
-                angleValues.x, // xFiltered (필터링된 좌우 기울기, 동일한 값 사용)
-                angleValues.y, // yFiltered (필터링된 앞뒤 기울기, 동일한 값 사용)
-                75, // score (기본값)
+                angleResult.X, // X축: 좌우 기울기
+                angleResult.Y, // Y축: 상하 기울기
+                angleResult.X, // 필터링된 좌우 기울기 (동일한 값 사용)
+                angleResult.Y, // 필터링된 상하 기울기 (동일한 값 사용)
+                calculateSimpleScore(angleResult), // 2축 기반 점수 계산
                 new Date(sensorItem.timestamp || Date.now()) // timestamp
               );
+
+              createdAngleData.userId = rawSensorData.userId;
 
               const angleCollection = await getAngleDataCollection();
               
@@ -213,37 +231,29 @@ export async function POST(request: NextRequest) {
               // 각도 데이터가 성공적으로 저장된 경우 자세 점수 계산 및 저장
               if (angleDataSaved) {
                 try {
-                  // 자세 점수 계산
-                  const { score, neckScore, backScore, rotationScore, feedback } = calculatePostureScore(createdAngleData);
-                  
-                  // PostureScore 객체 생성
-                  const postureScore = createPostureScore(
+                  // 자세 분석 및 PostureScore 생성 (단계적 데이터 처리와 동일한 방식 사용)
+                  const postureAnalysis = analyzePostureFromAngles(angleResult);
+                  const postureScore = createPostureScoreFromAnalysis(
+                    postureAnalysis,
                     dataNumber,
-                    score,
-                    neckScore,
-                    backScore,
-                    rotationScore,
-                    feedback,
                     new Date(sensorItem.timestamp || Date.now())
                   );
-                  
-                  // MongoDB에 자세 점수 저장
-                  const { db } = await connectToDatabase();
-                  const postureCollection = db.collection('posturescore');
+
+                  const postureScoreCollection = await getPostureScoreCollection();
                   
                   // 중복 체크 (동일한 number가 있는 경우)
-                  const existingScore = await postureCollection.findOne({ number: postureScore.number });
+                  const existingScore = await postureScoreCollection.findOne({ number: postureScore.number });
                   
                   if (existingScore) {
                     // 업데이트
-                    await postureCollection.updateOne(
+                    await postureScoreCollection.updateOne(
                       { number: postureScore.number },
                       { $set: postureScore }
                     );
                     console.log(`Posture score updated for index ${i}`);
                   } else {
                     // 새 데이터 삽입
-                    await postureCollection.insertOne(postureScore);
+                    await postureScoreCollection.insertOne(postureScore);
                     console.log(`Posture score inserted for index ${i}`);
                   }
                   
@@ -253,10 +263,10 @@ export async function POST(request: NextRequest) {
                 }
               }
 
-              // processedToAngle 플래그를 true로 업데이트
+              // processedToAngle 플래그를 true로 업데이트 (단계적 데이터 처리와 동일)
               await collection.updateOne(
                 { number: dataNumber },
-                { $set: { processedToAngle: true, updatedAt: new Date() } }
+                { $set: { processedToAngle: true } }
               );
 
             } catch (angleError) {
