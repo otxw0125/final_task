@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
 
     const angles = latestAngleData.angles;
     
-    // X축 (좌우 기울기) 피드백 - 목과 어깨에 부담
+    // X축 (상하 기울기) 피드백 - 허리에 부담
     const xRisk = getRiskLevel(angles.x, NORMAL_RANGES.x);
     const xFeedback = {
       angle: angles.x,
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       message: generateMessage(angles.x, 'x', xRisk)
     };
 
-    // Y축 (상하 기울기) 피드백 - 허리에 부담
+    // Y축 (좌우 기울기) 피드백 - 목과 어깨에 부담
     const yRisk = getRiskLevel(angles.y, NORMAL_RANGES.y);
     const yFeedback = {
       angle: angles.y,
