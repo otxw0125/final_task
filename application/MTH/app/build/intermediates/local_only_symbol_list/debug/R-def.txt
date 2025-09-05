@@ -16,6 +16,7 @@ drawable ic_o
 drawable ic_x
 id arduinoIconImageView
 id baselineTextView
+id btnTestCapture
 id connectButton
 id dataTextView
 id disconnectButton

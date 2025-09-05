@@ -75,6 +75,7 @@
         app:layout_constraintTop_toBottomOf="@id/dataTextView"
         app:layout_constraintVertical_bias="0.0" />
 
+
     <Button
         android:id="@+id/connectButton"
         android:layout_width="wrap_content"
@@ -86,8 +87,25 @@
         android:fontFamily="sans-serif-medium"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/disconnectButton" />
-
+        app:layout_constraintEnd_toStartOf="@+id/disconnectButton"
+        />
+    <Button
+        android:id="@+id/btnTestCapture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="촬영 테스트(임시)"
+        android:textSize="12sp"
+        android:minHeight="36dp"
+        android:minWidth="72dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:backgroundTint="@color/sky_blue"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="8dp"
+        android:fontFamily="sans-serif-medium"
+        app:layout_constraintBottom_toTopOf="@+id/connectButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
     <Button
         android:id="@+id/disconnectButton"
         android:layout_width="wrap_content"

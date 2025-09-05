@@ -18,6 +18,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <permission
         android:name="com.cookandroid.mth.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
@@ -37,6 +41,11 @@
         android:testOnly="true"
         android:theme="@style/Theme.MTH"
         android:usesCleartextTraffic="true" >
+        <service
+            android:name="com.cookandroid.mth.camera"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
+
         <activity
             android:name="com.cookandroid.mth.MainActivity"
             android:exported="true" > <!-- 반드시 명시 -->

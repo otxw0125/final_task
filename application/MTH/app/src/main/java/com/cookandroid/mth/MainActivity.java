@@ -27,6 +27,29 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.Service;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.ImageFormat;
+import android.hardware.camera2.*;
+import android.media.Image;
+import android.media.ImageReader;
+import android.net.Uri;
+import android.os.*;
+import android.provider.MediaStore;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+
+import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -60,6 +83,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import com.cookandroid.mth.camera;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "BluetoothApp";
@@ -67,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 102;
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final String HC06_DEVICE_NAME = "HC-06";
-    private static final String WEB_SERVER_URL = "http://192.168.51.251:3000/api/sensor-data/raw";
+    private static final String WEB_SERVER_URL = "http://192.168.78.251:3000/api/sensor-data/raw";
     private static final String CHANNEL_ID = "posture_alert_channel";
     private static final int NOTIFICATION_ID = 1;
     private static final long ANGLE_THRESHOLD_DURATION = 5000; // 5초
@@ -150,7 +174,18 @@ public class MainActivity extends AppCompatActivity {
             isMeasuring = false;
             postureImageView.setVisibility(View.INVISIBLE);
         });
+        Button testBtn = findViewById(R.id.btnTestCapture);
+        testBtn.setOnClickListener(v -> {
+            // ① 알림 표시
+            showPostureAlertNotification("테스트 알림", "카메라 촬영 테스트");
 
+            // ② (선택) 알림 없이 바로 서비스만 돌리고 싶다면 아래로도 가능
+    /*
+    Intent svc = new Intent(this, Camera.class)
+            .setAction(Camera.ACTION_CAPTURE);
+    ContextCompat.startForegroundService(this, svc);
+    */
+        });
         updateBluetoothStatus();
     }
 
@@ -667,6 +702,16 @@ public class MainActivity extends AppCompatActivity {
                         Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED) return;
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA}, 1002);
+            return;
+        }
+        Intent svc = new Intent(this, camera.class)
+                .setAction(camera.ACTION_CAPTURE);
+        ContextCompat.startForegroundService(this, svc);
+
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
@@ -678,5 +723,7 @@ public class MainActivity extends AppCompatActivity {
 
         NotificationManagerCompat.from(this)
                 .notify(NOTIFICATION_ID, b.build());
+
     }
+
 }
